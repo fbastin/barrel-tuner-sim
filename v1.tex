@@ -1,0 +1,120 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+\title{Analyse Mathématique des Vibrations du Canon \\ \large Application à la compensation positive}
+\author{}
+\date{}
+
+\begin{document}
+	
+	\maketitle
+	
+	\section{Introduction}
+	
+	La vibration du canon constitue l'un des phénomènes mécaniques influençant la précision d'une arme de compétition. Lors du départ du coup, le canon est soumis à plusieurs sollicitations :
+	
+	\begin{itemize}
+		\item pression des gaz ;
+		\item accélération du projectile ;
+		\item recul de l'arme ;
+		\item interaction avec les rayures ;
+		\item vibrations propres de la structure.
+	\end{itemize}
+	
+	\section{Modèle d'Euler--Bernoulli}
+	
+	Le canon peut être assimilé à une poutre encastrée à une extrémité. La déflexion transversale $y(x,t)$ vérifie l'équation aux dérivées partielles :
+	
+	\begin{equation}
+		EI\frac{\partial^4 y}{\partial x^4} + \rho A\frac{\partial^2 y}{\partial t^2} = q(x,t)
+	\end{equation}
+	
+	où :
+	
+	\begin{itemize}
+		\item $E$ : module d'Young ;
+		\item $I$ : moment quadratique ;
+		\item $\rho$ : densité ;
+		\item $A$ : section ;
+		\item $q(x,t)$ : excitation dynamique (forces réparties).
+	\end{itemize}
+	
+	\textit{Note :} Pour des canons de type "match" à parois épaisses, l'hypothèse des sections planes d'Euler-Bernoulli peut montrer ses limites. Il est alors pertinent d'utiliser le modèle de poutre de Timoshenko, qui intègre l'inertie de rotation et la déformation par cisaillement.
+
+	\section{Fréquences propres et conditions aux limites}
+	
+	Pour une poutre modélisée de façon standard comme encastrée-libre, les fréquences propres $f_n$ sont :
+	
+	\begin{equation}
+		f_n = \frac{\beta_n^2}{2\pi} \sqrt{\frac{EI}{\rho A L^4}}
+	\end{equation}
+	
+	avec les premières racines de l'équation caractéristique :
+	\[
+	\beta_1 = 1.875, \qquad \beta_2 = 4.694, \qquad \beta_3 = 7.855.
+	\]
+	
+	En compétition, l'ajout d'une masse à la bouche (un "tuner" ou un tube prolongateur) modifie les conditions aux limites à $x=L$. L'extrémité n'étant plus libre, l'inertie de cette masse décale les valeurs de $\beta_n$ et permet de modifier la période et l'amplitude des oscillations.
+
+	\section{Dynamique du projectile et angle de bouche}
+	
+	Le temps de parcours du projectile dans le canon est donné par :
+	
+	\begin{equation}
+		t_b = \int_0^L \frac{dx}{v(x)}
+	\end{equation}
+	
+	où $v(x)$ représente la vitesse du projectile. L'angle de la bouche du canon au moment de la sortie $t_b$ vaut :
+	
+	\begin{equation}
+		\theta(t_b) = \left. \frac{\partial y}{\partial x} \right|_{x=L, t=t_b}
+	\end{equation}
+	
+	Une petite variation angulaire $\Delta\theta$ entraîne un déplacement vertical approximatif sur la cible :
+	
+	\begin{equation}
+		\Delta h \approx D \Delta\theta
+	\end{equation}
+	
+	où $D$ représente la distance de tir.
+	
+	\section{Théorie de la Compensation Positive}
+	
+	Les munitions, même de haute qualité, présentent inévitablement une dispersion de leur vitesse initiale ($\Delta v$). En l'absence d'optimisation, cette variation de vitesse se traduit par une dispersion verticale sur la cible, les balles plus lentes chutant davantage.
+	
+	La \textbf{compensation positive} (G. Kolbe) utilise les vibrations transversales du canon pour annuler cette erreur. L'objectif est de "tuner" le canon pour qu'à l'instant moyen de sortie $t_b$, la bouche soit dans une phase de balancement ascendant ($\frac{d\theta}{dt} > 0$).
+	
+	\begin{itemize}
+		\item Une balle \textbf{plus rapide} atteint la bouche légèrement plus tôt, à un instant où l'angle de lancement est plus faible.
+		\item Une balle \textbf{plus lente} atteint la bouche une fraction de milliseconde plus tard. Le canon ayant continué sa course vers le haut, la balle bénéficie d'un angle de lancement légèrement plus élevé.
+	\end{itemize}
+	
+	Si le taux de variation $\frac{d\theta}{dt}$ est optimal, cet angle supplémentaire compense exactement la chute balistique additionnelle. Par exemple, pour un canon typique de 26 pouces tirant de la munition .22 LR de type Eley Tenex à 50 mètres, des études empiriques démontrent qu'une variation d'angle d'environ $6.0$ MOA par milliseconde lors de la sortie permet d'obtenir une compensation positive complète.
+	
+	\section{Bibliographie}
+	
+	\begin{thebibliography}{9}
+		
+		\bibitem{Rao}
+		S. S. Rao, \textit{Mechanical Vibrations}, Pearson, 2017.
+		
+		\bibitem{Meirovitch}
+		L. Meirovitch, \textit{Elements of Vibration Analysis}, McGraw-Hill, 1986.
+		
+		\bibitem{Carlucci}
+		D. Carlucci and S. Jacobson, \textit{Ballistics: Theory and Design of Guns and Ammunition}, CRC Press, 2018.
+		
+		\bibitem{Kolbe}
+		G. Kolbe, \textit{Using barrel vibrations to tune a barrel - The Vibrations of a Barrel Tuned for Positive Compensation}, Border Barrels, 2015.
+		
+	\end{thebibliography}
+	
+\end{document}

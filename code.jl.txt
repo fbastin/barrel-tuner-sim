@@ -1,0 +1,89 @@
+using LinearAlgebra
+
+# ==========================================
+# Paramètres physiques (Unités SI : m, kg, s)
+# ==========================================
+L = 0.66              # Longueur du canon (26 pouces)
+D_out = 0.024         # Diamètre extérieur (24mm, profil lourd cylindrique)
+D_in = 0.0056         # Diamètre intérieur (.22 LR)
+E = 200e9             # Module d'Young de l'acier (Pa)
+rho = 7850.0          # Masse volumique de l'acier (kg/m^3)
+
+# Propriétés du Tuner (masse ajoutée à la bouche)
+m_tuner = 0.200       # Masse du tuner (200 grammes)
+J_tuner = 0.0005      # Moment d'inertie estimé du tuner
+
+# Paramètres de simulation (Éléments Finis)
+N_elements = 20       # Nombre de segments
+L_e = L / N_elements  # Longueur d'un élément
+N_nodes = N_elements + 1
+ndof = 2 * N_nodes    # Nombre total de degrés de liberté (2 par nœud)
+
+# ==========================================
+# Calcul des propriétés de section
+# ==========================================
+A = (pi / 4) * (D_out^2 - D_in^2)           # Section transversale
+I = (pi / 64) * (D_out^4 - D_in^4)          # Moment quadratique
+
+# ==========================================
+# Matrices Élémentaires (Euler-Bernoulli)
+# ==========================================
+K_e = (E * I / L_e^3) * [
+    12.0     6*L_e       -12.0    6*L_e;
+    6*L_e    4*L_e^2     -6*L_e   2*L_e^2;
+   -12.0    -6*L_e        12.0   -6*L_e;
+    6*L_e    2*L_e^2     -6*L_e   4*L_e^2
+]
+
+M_e = (rho * A * L_e / 420.0) * [
+    156.0    22*L_e       54.0   -13*L_e;
+    22*L_e   4*L_e^2      13*L_e  -3*L_e^2;
+    54.0     13*L_e      156.0   -22*L_e;
+   -13*L_e  -3*L_e^2     -22*L_e   4*L_e^2
+]
+
+# ==========================================
+# Assemblage des Matrices Globales
+# ==========================================
+K_global = zeros(ndof, ndof)
+M_global = zeros(ndof, ndof)
+
+for e = 1:N_elements
+    idx = (2*e - 1):(2*e + 2) # Indices des 4 degrés de liberté de l'élément
+    K_global[idx, idx] += K_e
+    M_global[idx, idx] += M_e
+end
+
+# ==========================================
+# Application des Conditions aux Limites
+# ==========================================
+# 1. Encastrement à la culasse (Nœud 1 : y = 0, theta = 0)
+# On extrait la sous-matrice en ignorant les d.d.l. 1 et 2
+active_dof = 3:ndof
+K_active = K_global[active_dof, active_dof]
+M_active = M_global[active_dof, active_dof]
+
+# 2. Ajout du Tuner à la bouche (Dernier Nœud)
+# Le dernier nœud correspond aux deux dernières lignes/colonnes de nos matrices actives
+M_active[end-1, end-1] += m_tuner  # Ajout de la masse sur le d.d.l. de translation
+M_active[end, end] += J_tuner      # Ajout de l'inertie sur le d.d.l. de rotation
+
+# ==========================================
+# Résolution : Fréquences propres
+# ==========================================
+# On résout le problème aux valeurs propres : K * phi = lambda * M * phi
+# (où lambda = omega^2)
+eigen_decomp = eigen(K_active, M_active)
+eigenvalues = eigen_decomp.values
+
+# Filtrage pour éviter les imprécisions numériques (valeurs négatives minimes)
+valid_eigenvalues = filter(x -> x > 1e-5, eigenvalues)
+
+# Calcul des fréquences en Hertz (f = sqrt(lambda) / 2*pi)
+frequencies = sqrt.(valid_eigenvalues) / (2 * pi)
+
+println("=== Analyse Vibratoire du Canon ===")
+println("Fréquences propres fondamentales (Hertz) :")
+for i = 1:5
+    println("Mode $i : $(round(frequencies[i], digits=2)) Hz")
+end

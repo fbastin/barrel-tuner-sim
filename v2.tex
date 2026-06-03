@@ -1,0 +1,99 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+
+\geometry{margin=2.5cm}
+
+\title{Dynamique et Optimisation des Vibrations de Canon \\ \large De la théorie balistique à la simulation par éléments finis}
+\author{}
+\date{}
+
+\begin{document}
+	
+	\maketitle
+	\tableofcontents
+	\vspace{1cm}
+	
+	\section{Introduction et Vulgarisation : Le défi du tir sportif}
+	
+	Dans les disciplines de tir de haute précision, telles que le couché à 50 mètres (ISSF), la recherche du groupement parfait se heurte aux limites physiques de la munition. Même avec des lots de cartouches de qualité match, il existe une variation inévitable de la vitesse initiale (généralement mesurée en pieds par seconde, ou fps). 
+	
+	\subsection{Le problème de la dispersion verticale}
+	Balistiquement, une balle plus lente passe plus de temps en vol et subit l'accélération gravitationnelle plus longtemps. En cible, cela se traduit mécaniquement par un impact plus bas. Si le canon était un tube parfaitement rigide et immobile, la dispersion des vitesses se traduirait inévitablement par une ligne verticale sur la cible.
+	
+	\subsection{La compensation positive}
+	Le canon d'une carabine se comporte en réalité comme un diapason complexe. Lors de l'ignition, l'onde de choc, la pression des gaz et l'avancement du projectile génèrent des vibrations transversales. L'extrémité du canon (la bouche) décrit un mouvement oscillatoire.
+	
+	La \textbf{compensation positive} consiste à accorder ("tuner") ces vibrations de sorte qu'à l'instant précis où la balle quitte la bouche, le canon soit en phase de relèvement (vitesse angulaire positive). Ainsi :
+	\begin{itemize}
+		\item Une balle \textit{rapide} sort plus tôt, avec un angle de bouche légèrement inférieur.
+		\item Une balle \textit{lente} sort une fraction de milliseconde plus tard. Le canon ayant continué de se relever, la balle bénéficie d'un angle de lancement supérieur, compensant sa chute balistique.
+	\end{itemize}
+	Pour ajuster ce timing de sortie par rapport à l'onde vibratoire, les tireurs utilisent un "tuner" : une masse mobile fixée à la bouche qui modifie l'inertie du système, et donc ses fréquences et modes propres.
+	
+	\section{Développement Mathématique}
+	
+	\subsection{Modélisation de la structure}
+	Le canon est modélisé comme une poutre encastrée-libre. Pour une modélisation numérique robuste permettant de faire varier le profil extérieur du canon et d'intégrer des masses ponctuelles, la Méthode des Éléments Finis (MEF) est privilégiée. 
+	
+	Le canon de longueur $L$ est discrétisé en $N$ éléments. Chaque nœud possède deux degrés de liberté : le déplacement transversal $y$ et la rotation $\theta = \frac{\partial y}{\partial x}$.
+	
+	Pour un élément $e$ de longueur $L_e$, section $A$, moment quadratique $I$, module d'Young $E$ et masse volumique $\rho$, les matrices élémentaires de rigidité $[K]^e$ et de masse $[M]^e$ (modèle d'Euler-Bernoulli) s'écrivent :
+	
+	\begin{equation}
+		[K]^e = \frac{EI}{L_e^3} 
+		\begin{bmatrix} 
+			12 & 6L_e & -12 & 6L_e \\ 
+			6L_e & 4L_e^2 & -6L_e & 2L_e^2 \\ 
+			-12 & -6L_e & 12 & -6L_e \\ 
+			6L_e & 2L_e^2 & -6L_e & 4L_e^2 
+		\end{bmatrix}
+	\end{equation}
+	
+	\begin{equation}
+		[M]^e = \frac{\rho A L_e}{420} 
+		\begin{bmatrix} 
+			156 & 22L_e & 54 & -13L_e \\ 
+			22L_e & 4L_e^2 & 13L_e & -3L_e^2 \\ 
+			54 & 13L_e & 156 & -22L_e \\ 
+			-13L_e & -3L_e^2 & -22L_e & 4L_e^2 
+		\end{bmatrix}
+	\end{equation}
+	
+	\subsection{Conditions aux limites et intégration du Tuner}
+	Les matrices globales $[K]$ et $[M]$ sont assemblées. L'encastrement au niveau du boîtier de culasse impose des déplacements nuls pour le premier nœud : on supprime les deux premières lignes et colonnes du système global.
+	
+	L'ajout du tuner à la bouche (dernier nœud) se traduit par l'addition de sa masse $m_t$ et de son inertie de rotation $J_t$ directement dans la matrice de masse globale, aux degrés de liberté correspondants :
+	
+	\begin{equation}
+		[M]_{global}^{tuner} = [M]_{global} + 
+		\begin{bmatrix} 
+			\ddots & 0 & 0 \\ 
+			0 & m_t & 0 \\ 
+			0 & 0 & J_t 
+		\end{bmatrix}
+	\end{equation}
+	
+	\section{Mise en place de la simulation}
+	
+	L'équation générale de la dynamique de la structure est :
+	\begin{equation}
+		[M]\{\ddot{u}(t)\} + [C]\{\dot{u}(t)\} + [K]\{u(t)\} = \{F(t)\}
+	\end{equation}
+	
+	La première étape de la simulation consiste à résoudre le problème aux valeurs propres (en mode libre non amorti) pour trouver les fréquences naturelles de résonance du canon muni de son tuner :
+	\begin{equation}
+		\left( [K] - \omega^2 [M] \right) \{\phi\} = 0
+	\end{equation}
+	où $f = \frac{\omega}{2\pi}$ représente les fréquences propres en Hertz.
+	
+	La seconde étape (réponse transitoire) utilise un schéma d'intégration numérique pas-à-pas, comme la méthode de Newmark-$\beta$, pour évaluer la réponse du vecteur des déplacements $\{u(t)\}$ sous l'effet du vecteur de force dynamique $\{F(t)\}$ représentant l'excitation lors du tir. L'objectif final est d'extraire la valeur de $\theta$ au dernier nœud à l'instant de sortie du projectile $t_b$.
+	
+\end{document}
