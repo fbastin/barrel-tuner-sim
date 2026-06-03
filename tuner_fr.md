@@ -919,7 +919,8 @@ G. Kolbe, *Barrel Vibrations Simulator* (modèle « lumped parameter » par
 <http://www.geoffrey-kolbe.com/articles/rimfire_accuracy/barrel_vibrations.htm>.
 
 A. Mallock, *Vibrations of Rifle Barrels*, Proceedings of the Royal
-Society, Vol. 68, p. 327, 1901.
+Society, Vol. 68, p. 327, 1901.  
+<https://www.tireur.org/articles/Mall01.pdf>.
 
 C. Audette, *The Optimum Charge Weight (OCW) Method*, *Precision
 Shooting Magazine*, 2005--2010.
