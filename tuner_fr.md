@@ -1,6 +1,6 @@
 ---
 title: |
-  Dynamique et Optimisation des Vibrations de Canon  
+  Dynamique et Optimisation des Vibrations de Canon\
   De la théorie balistique à la simulation par éléments finis
 ---
 
@@ -10,7 +10,7 @@ Cette première section présente le *pourquoi* et le *comment* de la
 compensation positive sans recours aux outils mathématiques. Un lecteur
 curieux qui souhaite seulement comprendre l'idée et son intérêt pratique
 peut s'arrêter à la fin de la
-section [1.7](#sec:plan){reference-type="ref" reference="sec:plan"} ;
+section [1.8](#sec:plan){reference-type="ref" reference="sec:plan"} ;
 les parties suivantes développent ensuite la modélisation rigoureuse et
 la simulation numérique.
 
@@ -54,7 +54,7 @@ visée du tireur, mais aussi de *l'instant précis* de la sortie.
 ## Ce qui détermine l'ampleur des vibrations
 
 D'où vient cette mise en branle ? La source dominante, soulignée par
-G. Kolbe `\cite{KolbeSim}`{=latex}, est le *recul* : sous la poussée des
+G. Kolbe `\cite{KolbeSim}`{=latex}, est le *recul* : sous la poussée des
 gaz, l'arme entière part en arrière et *pivote autour de son centre de
 gravité*. Or l'axe du canon (la ligne de l'âme, par où sort la balle)
 passe *au-dessus* de ce centre de gravité ; la poussée de recul s'exerce
@@ -66,18 +66,19 @@ sonner le diapason.
 Deux grandeurs concrètes commandent alors l'*amplitude* du mouvement de
 bouche :
 
-- le **poids total de l'arme** : une arme lourde encaisse le recul en
-  bougeant moins, donc vibre moins ;
-- la **hauteur de l'âme au-dessus du centre de gravité** : plus ce bras
-  de levier est grand, plus le couple --- et donc l'amplitude --- est
-  important.
+-   le **poids total de l'arme** : une arme lourde encaisse le recul en
+    bougeant moins, donc vibre moins ;
+
+-   la **hauteur de l'âme au-dessus du centre de gravité** : plus ce
+    bras de levier est grand, plus le couple --- et donc l'amplitude ---
+    est important.
 
 Ces deux paramètres n'apparaissent pas dans le réglage du tuner (qui
 agit sur le *rythme* des vibrations, pas sur leur cause), mais ils
 expliquent pourquoi deux carabines de canon identique mais de montage
-différent ne se règlent pas pareil. Ils seront réintroduits
-formellement à la section [3.4](#sec:excitation) comme le moment
-d'excitation $M_0(t)$.
+différent ne se règlent pas pareil. Ils seront réintroduits formellement
+à la section [3.4](#sec:excitation){reference-type="ref"
+reference="sec:excitation"} comme le moment d'excitation $M_0(t)$.
 
 ## Le principe de la compensation positive
 
@@ -88,15 +89,15 @@ d'*exploiter* ces vibrations plutôt que de les subir. Si l'on parvient à
 régler le canon de sorte que la bouche soit en train de *monter* au
 moment précis où la balle en sort, alors :
 
-- une balle **rapide** sort un peu *en avance* : à ce moment, le canon
-  n'a pas encore eu le temps de beaucoup remonter, et la balle est
-  lancée avec un angle plus *bas*
-  (figure [1](#fig:compensation_positive){reference-type="ref"
-  reference="fig:compensation_positive"}, trajectoire rouge) ;
+-   une balle **rapide** sort un peu *en avance* : à ce moment, le canon
+    n'a pas encore eu le temps de beaucoup remonter, et la balle est
+    lancée avec un angle plus *bas*
+    (figure [1](#fig:compensation_positive){reference-type="ref"
+    reference="fig:compensation_positive"}, trajectoire rouge) ;
 
-- une balle **lente** sort un peu *en retard* : le canon a continué à se
-  relever, et la balle est lancée avec un angle plus *haut* (trajectoire
-  bleue).
+-   une balle **lente** sort un peu *en retard* : le canon a continué à
+    se relever, et la balle est lancée avec un angle plus *haut*
+    (trajectoire bleue).
 
 La balle lente est donc projetée *plus haut* initialement ; en cible,
 son surcroît de chute (parce qu'elle a volé plus longtemps) est
@@ -158,24 +159,26 @@ munition se combinent pour atteindre l'optimum.
 
 Le reste du document développe la théorie et la simulation :
 
-- Section [2](#sec:notations){reference-type="ref"
-  reference="sec:notations"} : liste des notations et conventions
-  utilisées.
+-   Section [2](#sec:notations){reference-type="ref"
+    reference="sec:notations"} : liste des notations et conventions
+    utilisées.
 
-- Section [3](#sec:math){reference-type="ref" reference="sec:math"} :
-  modélisation mathématique du canon (poutre d'Euler-Bernoulli, méthode
-  des éléments finis, intégration par Newmark-$\beta$).
+-   Section [3](#sec:math){reference-type="ref" reference="sec:math"} :
+    modélisation mathématique du canon (poutre d'Euler-Bernoulli,
+    méthode des éléments finis, intégration par Newmark-$\beta$).
 
-- Section [4](#sec:modale){reference-type="ref" reference="sec:modale"}
-  : analyse des fréquences propres et sensibilité au tuner.
+-   Section [4](#sec:modale){reference-type="ref"
+    reference="sec:modale"} : analyse des fréquences propres et
+    sensibilité au tuner.
 
-- Section [5](#sec:cinematique){reference-type="ref"
-  reference="sec:cinematique"} : critère mathématique de la compensation
-  positive, distinction nœud / ventre temporel, confirmation
-  expérimentale de Kolbe et validation par la simulation numérique.
+-   Section [5](#sec:cinematique){reference-type="ref"
+    reference="sec:cinematique"} : critère mathématique de la
+    compensation positive, distinction nœud / ventre temporel,
+    confirmation expérimentale de Kolbe et validation par la simulation
+    numérique.
 
-- Section [6](#sec:conclusions){reference-type="ref"
-  reference="sec:conclusions"} : conclusions pratiques pour le tireur.
+-   Section [6](#sec:conclusions){reference-type="ref"
+    reference="sec:conclusions"} : conclusions pratiques pour le tireur.
 
 # Notations et conventions {#sec:notations}
 
@@ -187,60 +190,60 @@ contraire, les angles sont en radians ; les conversions usuelles sont
 $1\ \text{MOA} = \pi/(180 \times 60)\ \text{rad} \approx 2{,}909 \times 10^{-4}\ \text{rad}$
 et $1\ \text{mrad} \approx 3{,}438\ \text{MOA}.$
 
-::: {.center}
-| Symbole                                         | Signification                                                                | Unité          |
-|:------------------------------------------------|:-----------------------------------------------------------------------------|:---------------|
-| *Géométrie et matériau du canon*                |                                                                              |                |
-| $L$                                             | Longueur du canon                                                            | m              |
-| $D_\text{ext}, D_\text{int}$                    | Diamètres extérieur (profil) et intérieur (âme)                              | m              |
-| $A$                                             | Aire de section transverse $\tfrac{\pi}{4}(D_\text{ext}^2 - D_\text{int}^2)$ | m$^2$          |
-| $I$                                             | Moment quadratique $\tfrac{\pi}{64}(D_\text{ext}^4 - D_\text{int}^4)$        | m$^4$          |
-| $E$                                             | Module d'Young (acier $\approx 200$ GPa)                                     | Pa             |
-| $\rho$                                          | Masse volumique (acier $\approx 7850$ kg/m$^3$)                              | kg/m$^3$       |
-| $EI$                                            | Rigidité en flexion                                                          | N$\cdot$m$^2$  |
-| $\rho A$                                        | Masse linéique                                                               | kg/m           |
-| *Cinématique de la poutre*                      |                                                                              |                |
-| $y(x,t)$                                        | Déflexion transverse au point $x$ et à l'instant $t$                         | m              |
-| $\theta(x,t) \equiv \partial y/\partial x$      | Pente / angle de fibre neutre                                                | rad            |
-| $\theta(L,t)$                                   | Angle à la bouche du canon (angle de tir)                                    | rad            |
-| $\dot\theta = \partial \theta/\partial t$       | Vitesse angulaire de bouche                                                  | rad/s          |
-| *Tuner*                                         |                                                                              |                |
-| $m_t$                                           | Masse du tuner (typiquement 100--400 g)                                      | kg             |
-| $J_t$                                           | Moment d'inertie transverse du tuner                                         | kg$\cdot$m$^2$ |
-| *Modes propres*                                 |                                                                              |                |
-| $\omega_n$                                      | Pulsation propre du mode $n$                                                 | rad/s          |
-| $f_n = \omega_n/(2\pi)$                         | Fréquence propre du mode $n$                                                 | Hz             |
-| $T_n = 1/f_n$                                   | Période propre du mode $n$                                                   | s              |
-| $\phi_n(x)$                                     | Forme spatiale du mode $n$                                                   | ---            |
-| $\zeta_n$                                       | Taux d'amortissement modal                                                   | ---            |
-| *Projectile et balistique interne*              |                                                                              |                |
-| $m_p$                                           | Masse du projectile (.22 LR : $\approx 2{,}6$ g)                             | kg             |
-| $v(x,t)$                                        | Vitesse du projectile à l'abscisse $x$                                       | m/s            |
-| $v_0, v_\text{muzzle}$                          | Vitesse initiale (à la sortie de la bouche)                                  | m/s            |
-| $\bar v$                                        | Vitesse moyenne effective dans le canon                                      | m/s            |
-| $t_b$                                           | Temps de parcours du projectile dans le canon                                | s              |
-| $p(t)$                                          | Pression dans la chambre / l'âme                                             | Pa             |
-| $A_\text{bore} = \tfrac{\pi}{4} D_\text{int}^2$ | Aire de la section utile de l'âme                                            | m$^2$          |
-| $\tau_v \equiv -\partial t_b/\partial v_0$      | Sensibilité du temps de sortie à la vitesse initiale                         | s/(m/s)        |
-| *Cible et compensation*                         |                                                                              |                |
-| $D$                                             | Distance de tir (50 m pour la discipline ISSF couché)                        | m              |
-| $g$                                             | Accélération de la pesanteur ($\approx 9{,}81$ m/s$^2$)                      | m/s$^2$        |
-| $h_\text{bal}(v_0)$                             | Chute balistique à la distance $D$                                           | m              |
-| $\theta_\text{out}$                             | Angle de bouche au moment $t_b$ : $\theta(L, t_b)$                           | rad            |
-| $\dot\theta_\text{out}^\star$                   | Vitesse angulaire *cible* pour compensation complète                         | rad/s          |
-| *Simulation numérique*                          |                                                                              |                |
-| $N$                                             | Nombre d'éléments finis                                                      | ---            |
-| $L_e = L/N$                                     | Longueur d'un élément                                                        | m              |
-| $[K], [M], [C]$                                 | Matrices globales de raideur, masse, amortissement                           | ---            |
-| $\{u(t)\}$                                      | Vecteur des d.d.l. nodaux (translations + rotations)                         | ---            |
-| $\Delta t$                                      | Pas de temps d'intégration Newmark-$\beta$                                   | s              |
-| $\gamma, \beta$                                 | Paramètres du schéma de Newmark                                              | ---            |
-| $h_\text{offset}$                               | Bras de levier du moment de recul à la culasse (excitation)                  | m              |
+::: center
+  Symbole                                           Signification                                                                  Unité
+  ------------------------------------------------- ------------------------------------------------------------------------------ ----------------
+  *Géométrie et matériau du canon*                                                                                                 
+  $L$                                               Longueur du canon                                                              m
+  $D_\text{ext}, D_\text{int}$                      Diamètres extérieur (profil) et intérieur (âme)                                m
+  $A$                                               Aire de section transverse $\tfrac{\pi}{4}(D_\text{ext}^2 - D_\text{int}^2)$   m$^2$
+  $I$                                               Moment quadratique $\tfrac{\pi}{64}(D_\text{ext}^4 - D_\text{int}^4)$          m$^4$
+  $E$                                               Module d'Young (acier $\approx 200$ GPa)                                       Pa
+  $\rho$                                            Masse volumique (acier $\approx 7850$ kg/m$^3$)                                kg/m$^3$
+  $EI$                                              Rigidité en flexion                                                            N$\cdot$m$^2$
+  $\rho A$                                          Masse linéique                                                                 kg/m
+  *Cinématique de la poutre*                                                                                                       
+  $y(x,t)$                                          Déflexion transverse au point $x$ et à l'instant $t$                           m
+  $\theta(x,t) \equiv \partial y/\partial x$        Pente / angle de fibre neutre                                                  rad
+  $\theta(L,t)$                                     Angle à la bouche du canon (angle de tir)                                      rad
+  $\dot\theta = \partial \theta/\partial t$         Vitesse angulaire de bouche                                                    rad/s
+  *Tuner*                                                                                                                          
+  $m_t$                                             Masse du tuner (typiquement 100--400 g)                                        kg
+  $J_t$                                             Moment d'inertie transverse du tuner                                           kg$\cdot$m$^2$
+  *Modes propres*                                                                                                                  
+  $\omega_n$                                        Pulsation propre du mode $n$                                                   rad/s
+  $f_n = \omega_n/(2\pi)$                           Fréquence propre du mode $n$                                                   Hz
+  $T_n = 1/f_n$                                     Période propre du mode $n$                                                     s
+  $\phi_n(x)$                                       Forme spatiale du mode $n$                                                     ---
+  $\zeta_n$                                         Taux d'amortissement modal                                                     ---
+  *Projectile et balistique interne*                                                                                               
+  $m_p$                                             Masse du projectile (.22 LR : $\approx 2{,}6$ g)                               kg
+  $v(x,t)$                                          Vitesse du projectile à l'abscisse $x$                                         m/s
+  $v_0, v_\text{muzzle}$                            Vitesse initiale (à la sortie de la bouche)                                    m/s
+  $\bar v$                                          Vitesse moyenne effective dans le canon                                        m/s
+  $t_b$                                             Temps de parcours du projectile dans le canon                                  s
+  $p(t)$                                            Pression dans la chambre / l'âme                                               Pa
+  $A_\text{bore} = \tfrac{\pi}{4} D_\text{int}^2$   Aire de la section utile de l'âme                                              m$^2$
+  $\tau_v \equiv -\partial t_b/\partial v_0$        Sensibilité du temps de sortie à la vitesse initiale                           s/(m/s)
+  *Cible et compensation*                                                                                                          
+  $D$                                               Distance de tir (50 m pour la discipline ISSF couché)                          m
+  $g$                                               Accélération de la pesanteur ($\approx 9{,}81$ m/s$^2$)                        m/s$^2$
+  $h_\text{bal}(v_0)$                               Chute balistique à la distance $D$                                             m
+  $\theta_\text{out}$                               Angle de bouche au moment $t_b$ : $\theta(L, t_b)$                             rad
+  $\dot\theta_\text{out}^\star$                     Vitesse angulaire *cible* pour compensation complète                           rad/s
+  *Simulation numérique*                                                                                                           
+  $N$                                               Nombre d'éléments finis                                                        ---
+  $L_e = L/N$                                       Longueur d'un élément                                                          m
+  $[K], [M], [C]$                                   Matrices globales de raideur, masse, amortissement                             ---
+  $\{u(t)\}$                                        Vecteur des d.d.l. nodaux (translations + rotations)                           ---
+  $\Delta t$                                        Pas de temps d'intégration Newmark-$\beta$                                     s
+  $\gamma, \beta$                                   Paramètres du schéma de Newmark                                                ---
+  $h_\text{offset}$                                 Bras de levier du moment de recul à la culasse (excitation)                    m
 :::
 
 # Développement Mathématique {#sec:math}
 
-## Modèle continu : poutre d'Euler--Bernoulli {#modèle-continu-poutre-deulerbernoulli}
+## Modèle continu : poutre d'Euler--Bernoulli
 
 On modélise le canon comme une poutre prismatique encastrée à la culasse
 ($x=0$) et libre à la bouche ($x=L$), de section $A(x)$ et de moment
@@ -353,7 +356,7 @@ convient de prendre en compte pour un tuner long et déporté.
 L'excitation $\{F(t)\}$ regroupe plusieurs contributions hétérogènes en
 amplitude et en bande spectrale :
 
-#### (a) Pression des gaz et recul. {#a-pression-des-gaz-et-recul.}
+#### (a) Pression des gaz et recul.
 
 La pression $p(t)$ dans la chambre engendre une force longitudinale
 appliquée à la culasse. Si l'arme est tenue de manière non parfaitement
@@ -366,51 +369,50 @@ pour la .22 LR et de durée caractéristique $\sim 0{,}5$ ms.
 Physiquement, ce moment n'est pas un artefact d'asymétrie de tenue : il
 existe même pour une arme tenue idéalement, car la *ligne de l'âme est
 décalée du centre de gravité* de l'arme. Suivant la modélisation de
-Kolbe `\cite{KolbeSim}`{=latex}, l'arme libre de masse $m_r$ recule et
-tourne autour de son centre de gravité, situé à une distance $h_\text{cg}$
-*sous* l'axe de l'âme ; la force de recul
+Kolbe `\cite{KolbeSim}`{=latex}, l'arme libre de masse $m_r$ recule et
+tourne autour de son centre de gravité, situé à une distance
+$h_\text{cg}$ *sous* l'axe de l'âme ; la force de recul
 $F_\text{rec}(t) = p(t)\,A_\text{bore}$ s'exerce donc avec ce bras de
-levier et imprime à la base du canon le moment
-
-**M₀(t) = p(t) · A_bore · h_cg**,
-
-tandis que l'amplitude angulaire résultante décroît comme $1/m_r$ (une
-arme lourde recule moins). Le modèle encastré ne contient pas le
-mouvement de corps rigide du recul ; on relie donc le bras de levier
-$h_\text{offset}$ de la simulation au moment de recul physique en
-factorisant sa dépendance,
-
-**h_offset(m_r, h_cg) = h_offset_réf · (h_cg / h_cg_réf) · (m_r_réf / m_r)**,
-
+levier et imprime à la base du canon le moment $$\label{eq:moment_recul}
+        M_0(t) \;=\; p(t)\,A_\text{bore}\,h_\text{cg},$$ tandis que
+l'amplitude angulaire résultante décroît comme $1/m_r$ (une arme lourde
+recule moins). Le modèle encastré ne contient pas le mouvement de corps
+rigide du recul ; on relie donc le bras de levier $h_\text{offset}$ de
+la section [5.5](#sec:validation_num){reference-type="ref"
+reference="sec:validation_num"} au moment de recul physique en
+factorisant sa dépendance, $$\label{eq:hoffset_phys}
+        h_\text{offset}(m_r, h_\text{cg}) \;=\; h_\text{offset}^\text{réf}\,\frac{h_\text{cg}}{h_\text{cg}^\text{réf}}\,\frac{m_r^\text{réf}}{m_r},$$
 où la *seule* constante $h_\text{offset}^\text{réf}$ est calée une fois
-pour toutes sur l'enveloppe vibratoire mesurée par Kolbe pour son arme de
-référence ($m_r^\text{réf} = 5$ kg, $h_\text{cg}^\text{réf} = 25{,}4$
-mm). Au lieu de recalibrer pour chaque arme, on *prédit* alors la
-dépendance à deux grandeurs mesurables sur l'arme réelle --- le poids
-total $m_r$ (aisé à peser) et la distance $h_\text{cg}$ de l'âme au
-centre de gravité (plus délicate, déterminée par équilibrage) : monter le
-même canon sur une arme plus légère, ou dont l'âme est plus haut placée
-au-dessus du centre de gravité, amplifie les vibrations et impose un
-nouveau réglage du tuner.
+pour toutes sur l'enveloppe vibratoire mesurée par Kolbe pour son arme
+de référence ($m_r^\text{réf} = 5$ kg,
+$h_\text{cg}^\text{réf} = 25{,}4$ mm). Au lieu de recalibrer pour chaque
+arme, on *prédit* alors la dépendance à deux grandeurs mesurables sur
+l'arme réelle --- le poids total $m_r$ (aisé à peser) et la distance
+$h_\text{cg}$ de l'âme au centre de gravité (plus délicate, déterminée
+par équilibrage) : monter le même canon sur une arme plus légère, ou
+dont l'âme est plus haut placée au-dessus du centre de gravité, amplifie
+les vibrations et impose un nouveau réglage du tuner.
 
-#### Conditions aux limites : encastrement *vs* action souple.
+#### (a$'$) Conditions aux limites : encastrement *vs* action souple.
 
 Le modèle ci-dessus suppose un encastrement parfait à la culasse
-($y(0)=0,\ \theta(0)=0$). C'est une idéalisation : Kolbe
-`\cite{KolbeSim}`{=latex} préfère ne *pas* bloquer la base et représente
-la souplesse de la boîte de culasse par un tronçon supplémentaire de
-poutre (≈ 100 mm de long, ≈ 38 mm de diamètre, alésage ≈ 25 mm) ajouté à
-l'arrière, l'ensemble reculant *librement* dans l'espace (hypothèse
-*free recoil*, bien approchée par un tir au sac mais mise en défaut si
-une arme légère est fermement épaulée). Notre encastrement rigide
-surestime donc légèrement la fréquence fondamentale et ignore le
-mouvement de corps rigide du recul ; il reste néanmoins pertinent pour
-l'*angle relatif* de bouche $\theta(L,t)$, seule grandeur qui pilote la
-compensation, et simplifie l'analyse modale. Le raffinement « action
-souple » constitue l'extension naturelle pour un travail quantitatif sur
-arme réelle.
+($y(0)=0,\ \theta(0)=0$). C'est une idéalisation :
+Kolbe `\cite{KolbeSim}`{=latex} préfère ne *pas* bloquer la base et
+représente la souplesse de la boîte de culasse par un tronçon
+supplémentaire de poutre ($\sim 100$ mm de long, $\sim 38$ mm de
+diamètre, alésage $\sim 25$ mm) ajouté à l'arrière, l'ensemble reculant
+*librement* dans l'espace (hypothèse *free recoil*, bien approchée par
+un tir au sac mais mise en défaut si une arme légère est fermement
+épaulée). Notre encastrement rigide surestime donc légèrement la
+fréquence fondamentale et ignore le mouvement de corps rigide du recul ;
+il reste néanmoins pertinent pour l'*angle relatif* de bouche
+$\theta(L,t)$, seule grandeur qui pilote la compensation
+(cf. section [5](#sec:cinematique){reference-type="ref"
+reference="sec:cinematique"}), et simplifie l'analyse modale. Le
+raffinement « action souple » constitue l'extension naturelle pour un
+travail quantitatif sur arme réelle.
 
-#### (b) Charge mobile du projectile (effet de poids). {#b-charge-mobile-du-projectile-effet-de-poids.}
+#### (b) Charge mobile du projectile (effet de poids).
 
 Le projectile, de masse $m_p$, applique en sa position courante $x_p(t)$
 une force transverse due à la gravité (poids) et à l'engagement dans les
@@ -421,14 +423,14 @@ l'accélération de la pesanteur et $\delta$ la distribution de Dirac. Le
 vecteur nodal correspondant s'obtient en évaluant les fonctions de forme
 à la position $x_p(t)$.
 
-#### (c) Couple gyroscopique des rayures. {#c-couple-gyroscopique-des-rayures.}
+#### (c) Couple gyroscopique des rayures.
 
 L'accélération angulaire imprimée par les rayures transmet un couple
 réactif au canon, modélisable comme un moment réparti proportionnel à
 $\dot v(x_p)$. Cet effet, plus faible que (a) et (b), peut être négligé
 en première analyse.
 
-#### (d) Position du projectile. {#d-position-du-projectile.}
+#### (d) Position du projectile.
 
 La cinématique interne $x_p(t)$ est obtenue par intégration de
 l'équation de l'écoulement interne :
@@ -485,14 +487,14 @@ sont $f_n = \omega_n/(2\pi)$. Pour le canon de référence du simulateur
 $D_\text{int}=5{,}6$ mm), une résolution MEF à 20 éléments donne les
 premiers modes suivants :
 
-::: {.center}
-| Mode       |                           Canon nu | Tuner 200 g | Tuner 400 g |
-|:-----------|-----------------------------------:|------------:|------------:|
-| $f_1$ (Hz) |                              39,87 |       34,16 |       30,33 |
-| $f_2$ (Hz) |                              230,1 |      217,66 |       206,9 |
-| $f_3$ (Hz) |                              633,5 |      602,39 |       575,1 |
-| $f_4$ (Hz) | $\approx$`<!-- -->`{=html}1,19 kHz |    1,14 kHz |    1,09 kHz |
-| $f_5$ (Hz) | $\approx$`<!-- -->`{=html}1,87 kHz |    1,79 kHz |    1,72 kHz |
+::: center
+  Mode                                     Canon nu   Tuner 200 g   Tuner 400 g
+  ------------ ------------------------------------ ------------- -------------
+  $f_1$ (Hz)                                  39,87         34,16         30,33
+  $f_2$ (Hz)                                  230,1        217,66         206,9
+  $f_3$ (Hz)                                  633,5        602,39         575,1
+  $f_4$ (Hz)     $\approx$`<!-- -->`{=html}1,19 kHz      1,14 kHz      1,09 kHz
+  $f_5$ (Hz)     $\approx$`<!-- -->`{=html}1,87 kHz      1,79 kHz      1,72 kHz
 :::
 
 La solution analytique pour la poutre cantilever nue,
@@ -503,16 +505,13 @@ $f_1$ d'environ $14\,\%$ (de 39,9 à 34,2 Hz) ; un tuner de 400 g donne
 une réduction de $24\,\%$. Cette plage couvre largement la fenêtre
 temporelle utile autour de $t_b \approx 2$--$3$ ms.
 
-<figure id="fig:modes_propres">
-<img src="plot_modes_propres.png" />
-<figcaption>Quatre premiers modes propres <span
-class="math inline"><em>ϕ</em><sub><em>n</em></sub>(<em>x</em>)</span>
-du canon muni d’un tuner de 200 g (calcul MEF, 20 éléments). On notera
-la déformée monotone du mode 1 (ventre spatial à la bouche), et le
-rapprochement progressif des nœuds spatiaux des modes supérieurs vers la
-bouche, conséquence de la concentration de masse à <span
-class="math inline"><em>x</em> = <em>L</em></span>.</figcaption>
-</figure>
+![Quatre premiers modes propres $\phi_n(x)$ du canon muni d'un tuner de
+200 g (calcul MEF, 20 éléments). On notera la déformée monotone du mode
+1 (ventre spatial à la bouche), et le rapprochement progressif des nœuds
+spatiaux des modes supérieurs vers la bouche, conséquence de la
+concentration de masse à
+$x=L$.](plot_modes_propres.png){#fig:modes_propres
+width="0.85\\linewidth"}
 
 ## Sensibilité par le quotient de Rayleigh {#sec:rayleigh}
 
@@ -558,20 +557,21 @@ réglage qui est ciblé par le tuner.
 
 #### Régime transitoire, et non onde stationnaire établie.
 
-Une mise en garde s'impose, dont Kolbe `\cite{KolbeSim}`{=latex} fait le
+Une mise en garde s'impose, dont Kolbe `\cite{KolbeSim}`{=latex} fait le
 cœur de son argumentaire : il est tentant de représenter « la façon dont
 vibre un canon » par les *solutions analytiques en ondes stationnaires*
 de l'équation des poutres. Or ces ondes ne se forment *pas* pendant la
 fenêtre utile. Leur vitesse de phase est trop faible pour qu'un régime
 stationnaire ait le temps de s'établir sur la durée
-$t_b \approx 1$--$3$ ms du passage de la balle : à cet instant, le canon
+$t_b \approx 1$--$3$ ms du passage de la balle : à cet instant, le canon
 est encore dans la *réponse transitoire* au moment impulsionnel de
 recul, et non dans un régime périodique installé. C'est précisément
 pourquoi le découpage modal ci-dessus est exploité ici en *réponse
-forcée transitoire* (intégrée pas à pas par Newmark-$\beta$) plutôt qu'en
-superposition de modes d'amplitudes figées, et pourquoi le raisonnement
-sur les nœuds privilégie le *nœud temporel* (l'état instantané de
-l'oscillation à $t_b$) sur le nœud spatial (propriété d'un mode
+forcée transitoire* (intégrée pas à pas par Newmark-$\beta$) plutôt
+qu'en superposition de modes d'amplitudes figées, et pourquoi le
+raisonnement de la section [5.3](#sec:nodes){reference-type="ref"
+reference="sec:nodes"} privilégie le *nœud temporel* (l'état instantané
+de l'oscillation à $t_b$) sur le nœud spatial (propriété d'un mode
 pleinement établi).
 
 # Cinématique de bouche et compensation positive {#sec:cinematique}
@@ -678,11 +678,11 @@ deux types d'instants alternent à un quart de période.
 Le critère [\[eq:dthetaopt\]](#eq:dthetaopt){reference-type="eqref"
 reference="eq:dthetaopt"} se traduit alors sans ambiguïté :
 
-::: {.center}
-| Instant de sortie $t_b$          |   $\theta(L,t_b)$   |      $\dot\theta(L,t_b)$      |
-|:---------------------------------|:-------------------:|:-----------------------------:|
-| **Ventre temporel** (*antinode*) | $\pm\Theta_1$ (max) |              $0$              |
-| **Nœud temporel** (*node*)       |         $0$         | $\pm\Theta_1\,\omega_1$ (max) |
+::: center
+  Instant de sortie $t_b$               $\theta(L,t_b)$          $\dot\theta(L,t_b)$
+  ---------------------------------- --------------------- -------------------------------
+  **Ventre temporel** (*antinode*)    $\pm\Theta_1$ (max)                $0$
+  **Nœud temporel** (*node*)                  $0$           $\pm\Theta_1\,\omega_1$ (max)
 :::
 
 **La compensation positive exige une sortie au voisinage d'un *nœud
@@ -730,11 +730,11 @@ photo-détectrice repérant l'instant exact de sortie. Sur un canon Border
 de 26\", calibre .22 LR, munition Eley EPS Tenex, deux configurations
 sont comparées :
 
-::: {.center}
-| Configuration       |      $\dot\theta(L,t_b)$ mesuré      |   Groupements en cible   |     |
-|:--------------------|:------------------------------------:|:------------------------:|:---:|
-| Canon nu            | $-9{,}4$ MOA/ms (bouche descendante) | cordon *vertical* marqué |     |
-| Canon + tuner 200 g | $+6{,}0$ MOA/ms (bouche ascendante)  |   groupements *ronds*    |     |
+::: center
+  Configuration               $\dot\theta(L,t_b)$ mesuré          Groupements en cible    
+  --------------------- -------------------------------------- -------------------------- --
+  Canon nu               $-9{,}4$ MOA/ms (bouche descendante)   cordon *vertical* marqué  
+  Canon + tuner 200 g    $+6{,}0$ MOA/ms (bouche ascendante)      groupements *ronds*     
 :::
 
 La valeur $+6{,}0$ MOA/ms coïncide avec le critère
@@ -765,46 +765,26 @@ bras de levier $h_\text{offset}$ est calibré automatiquement pour
 reproduire l'enveloppe vibratoire mesurée par Kolbe ($\sim 10$ MOA/ms en
 pic).
 
-<figure id="fig:reponse_transitoire">
-<img src="plot_tir_nominal.png" />
-<figcaption>Réponse transitoire simulée pour la configuration nominale
-(tuner 200 g, <span
-class="math inline"><em>h</em><sub>offset</sub> = 16, 5</span> mm). De
-haut en bas : déflexion <span
-class="math inline"><em>y</em>(<em>L</em>,<em>t</em>)</span>, angle de
-bouche <span
-class="math inline"><em>θ</em>(<em>L</em>,<em>t</em>)</span>, et vitesse
-angulaire <span
-class="math inline"><em>θ̇</em>(<em>L</em>,<em>t</em>)</span>. Le trait
-rouge pointillé marque <span
-class="math inline"><em>t</em><sub><em>b</em></sub> = 2, 5</span> ms ;
-le trait vert pointillé sur le panneau inférieur indique la cible Kolbe
-(6 MOA/ms). La valeur calculée à <span
-class="math inline"><em>t</em><sub><em>b</em></sub></span> est de <span
-class="math inline"> + 6, 64</span> MOA/ms, en accord à <span
-class="math inline"> ∼ 10 %</span> avec la mesure.</figcaption>
-</figure>
+![Réponse transitoire simulée pour la configuration nominale (tuner
+200 g, $h_\text{offset} = 16{,}5$ mm). De haut en bas : déflexion
+$y(L,t)$, angle de bouche $\theta(L,t)$, et vitesse angulaire
+$\dot\theta(L,t)$. Le trait rouge pointillé marque $t_b = 2{,}5$ ms ; le
+trait vert pointillé sur le panneau inférieur indique la cible Kolbe (6
+MOA/ms). La valeur calculée à $t_b$ est de $+6{,}64$ MOA/ms, en accord à
+$\sim 10\,\%$ avec la
+mesure.](plot_tir_nominal.png){#fig:reponse_transitoire
+width="0.85\\linewidth"}
 
-<figure id="fig:balayage_tuner">
-<img src="plot_balayage_tuner.png" />
-<figcaption>Balayage paramétrique sur la masse du tuner <span
-class="math inline"><em>m</em><sub><em>t</em></sub> ∈ [0,400]</span> g
-(autres paramètres fixes). De haut en bas : (i) <span
-class="math inline"><em>θ̇</em>(<em>L</em>,<em>t</em><sub><em>b</em></sub>)</span>
-varie peu (5<span>,</span>9 à 6<span>,</span>7 MOA/ms) car <span
-class="math inline"><em>t</em><sub><em>b</em></sub>/<em>T</em><sub>1</sub> ≈ 0, 085</span>
-reste dans le quart de cycle ascendant initial ; (ii) <span
-class="math inline"><em>θ</em>(<em>L</em>,<em>t</em><sub><em>b</em></sub>)</span>
-varie en revanche fortement et monotoniquement (<span
-class="math inline"> + 166</span> à <span
-class="math inline"> − 255</span> µrad), traduisant un décalage du point
-d’impact moyen ; (iii) <span
-class="math inline"><em>f</em><sub>1</sub></span> décroît
-monotoniquement de 39<span>,</span>9 à 30<span>,</span>3 Hz (relation
-prévue par le quotient de Rayleigh, équation <a href="#eq:dwdmt"
-data-reference-type="eqref"
-data-reference="eq:dwdmt">[eq:dwdmt]</a>).</figcaption>
-</figure>
+![Balayage paramétrique sur la masse du tuner $m_t \in [0, 400]$ g
+(autres paramètres fixes). De haut en bas : (i) $\dot\theta(L,t_b)$
+varie peu (5,9 à 6,7 MOA/ms) car $t_b/T_1 \approx 0{,}085$ reste dans le
+quart de cycle ascendant initial ; (ii) $\theta(L,t_b)$ varie en
+revanche fortement et monotoniquement ($+166$ à $-255$ µrad), traduisant
+un décalage du point d'impact moyen ; (iii) $f_1$ décroît
+monotoniquement de 39,9 à 30,3 Hz (relation prévue par le quotient de
+Rayleigh, équation [\[eq:dwdmt\]](#eq:dwdmt){reference-type="eqref"
+reference="eq:dwdmt"}).](plot_balayage_tuner.png){#fig:balayage_tuner
+width="0.85\\linewidth"}
 
 Ces tracés illustrent une distinction essentielle pour le tireur : le
 tuner agit *principalement sur le point d'impact moyen* (via
@@ -819,7 +799,7 @@ charge le décalage du POI.
 Le formalisme précédent, validé numériquement par la simulation par
 éléments finis, conduit à plusieurs conclusions exploitables.
 
-#### 1. Effet d'une masse de bouche. {#effet-dune-masse-de-bouche.}
+#### 1. Effet d'une masse de bouche.
 
 L'ajout d'une masse à la bouche *abaisse* la fréquence fondamentale
 (cf. [\[eq:dwdmt\]](#eq:dwdmt){reference-type="eqref"
@@ -830,7 +810,7 @@ le cycle vibratoire est de l'ordre de quelques fractions de
 milliseconde, ce qui suffit à balayer l'intégralité de la fenêtre
 d'optimalité dans laquelle $t_b \approx 2$--$3$ ms doit être positionné.
 
-#### 2. Sens du réglage. {#sens-du-réglage.}
+#### 2. Sens du réglage.
 
 Allonger la position effective du tuner (le visser vers l'extérieur)
 augmente $J_t$ et le bras de levier, ce qui amplifie l'effet de la masse
@@ -838,7 +818,7 @@ et abaisse $f_1$. C'est le geste qui « ralentit » la cinématique de
 bouche et retarde le passage par zéro de $\theta(L,t)$ : utile pour des
 munitions plus lentes (sortie $t_b$ retardée).
 
-#### 3. Sensibilité à la munition. {#sensibilité-à-la-munition.}
+#### 3. Sensibilité à la munition.
 
 Tout changement de lot ou de marque modifie $\bar v$ et donc $t_b$. La
 fenêtre d'optimalité ($\dot\theta_\text{out}$ proche de
@@ -848,7 +828,7 @@ $T_1 = 2\pi/\omega_1$. Tout nouveau lot doit donc faire l'objet d'un
 retuning systématique au pas de tuner (méthode *ladder tune* ou
 *Audette*).
 
-#### 4. Limites physiques. {#limites-physiques.}
+#### 4. Limites physiques.
 
 Le tuner ne supprime pas la dispersion intrinsèque de la munition : il
 convertit une dispersion verticale en un groupement réellement plus
@@ -860,7 +840,7 @@ La dispersion horizontale, indépendante du couple
 attendu en cible reste donc borné par les autres sources d'erreur (vent,
 plomb de balle, parallaxe, mire).
 
-#### 5. Robustesse aux modes supérieurs. {#robustesse-aux-modes-supérieurs.}
+#### 5. Robustesse aux modes supérieurs.
 
 Les modes 2 et 3, de fréquences nettement plus élevées (cf. tableau
 précédent), produisent une oscillation rapide superposée sur
@@ -872,54 +852,63 @@ accordable » à double anneau.
 
 #### 6. Domaine de validité : centerfire *vs* rimfire.
 
-Une réserve d'honnêteté, formulée par Kolbe lui-même
-`\cite{KolbeSim}`{=latex}, mérite d'être rapportée. Le *principe* de
-compensation positive est général et fut d'abord établi pour le rimfire.
-En revanche, le *modèle d'excitation par moment impulsionnel de recul*
-retenu ici (et dans le simulateur de Kolbe) est avant tout pertinent
-pour les calibres *centerfire* : la courbe pression-temps y est longue
-($\sim 1$ ms, pic $\sim 350$ MPa $\approx 50\,000$ psi, profil type .308
-Win) et le recul élevé, si bien que le moment de recul domine
-effectivement la mise en vibration. Pour la *.22 LR*, l'impulsion de
-pression est si brève que, selon Kolbe, le moment de recul seul
+Une réserve d'honnêteté, formulée par Kolbe
+lui-même `\cite{KolbeSim}`{=latex}, mérite d'être rapportée. Le
+*principe* de compensation positive
+(sections [1](#sec:intro){reference-type="ref" reference="sec:intro"}
+et [5](#sec:cinematique){reference-type="ref"
+reference="sec:cinematique"}) est général et fut d'abord établi pour le
+rimfire. En revanche, le *modèle d'excitation par moment impulsionnel de
+recul* retenu ici (et dans le simulateur de Kolbe) est avant tout
+pertinent pour les calibres *centerfire* : la courbe pression-temps y
+est longue ($\sim 1$ ms, pic $\sim 350$ MPa $\approx 50\,000$ psi,
+profil type .308 Win) et le recul élevé, si bien que le moment de recul
+domine effectivement la mise en vibration. Pour la *.22 LR*, l'impulsion
+de pression est si brève que, selon Kolbe, le moment de recul seul
 reproduit mal les vibrations observées : d'*autres* sources d'excitation
 (engagement dans les rayures, effet de poids du projectile mobile, jeux
 de l'assemblage) y prennent une part comparable. Notre modèle les
 intègre partiellement --- c'est tout l'objet des contributions (b) et
-(c) de la modélisation de l'excitation, absentes du simulateur originel
-de Kolbe --- mais les valeurs numériques rimfire avancées dans ce
-document doivent être lues comme des *ordres de grandeur calibrés*, non
-comme des prédictions absolues. La validation expérimentale directe
-reste la référence pour le rimfire.
+(c) de la section [3.4](#sec:excitation){reference-type="ref"
+reference="sec:excitation"}, absentes du simulateur originel de Kolbe
+--- mais les valeurs numériques rimfire avancées dans ce document
+doivent être lues comme des *ordres de grandeur calibrés*, non comme des
+prédictions absolues. La validation expérimentale directe
+(section [5.5](#sec:validation_num){reference-type="ref"
+reference="sec:validation_num"}) reste la référence pour le rimfire.
 
 #### 7. Un modèle planaire : vibration verticale seulement.
 
 Une seconde réserve d'honnêteté porte sur la dimensionnalité du modèle.
 Tout le développement précédent est *planaire* : la poutre
-d'Euler-Bernoulli n'est résolue que dans un seul plan et ne décrit que
+d'Euler-Bernoulli [\[eq:EB\]](#eq:EB){reference-type="eqref"
+reference="eq:EB"} n'est résolue que dans un seul plan et ne décrit que
 la composante *verticale* de l'oscillation de bouche. Rien n'oblige
 pourtant le canon à ne vibrer que verticalement : en réalité la bouche
 décrit une *orbite bidimensionnelle* (un « whip » elliptique), et sa
-composante horizontale --- déjà signalée comme non compensée au point 4
+composante horizontale --- déjà signalée comme non compensée au point 4
 --- n'est corrigée par aucun mécanisme de compensation positive. Elle
 s'ajoute en dispersion résiduelle et fixe un plancher à la précision
 atteignable. Si le modèle vertical reste néanmoins pertinent au premier
 ordre, c'est que *deux effets brisent la symétrie* et privilégient le
 plan vertical : la *gravité*, qui impose une flèche statique et oriente
 le mode dominant ; et la *géométrie du recul*, dont le couple de
-relèvement (âme au-dessus du centre de gravité) est essentiellement
-vertical. Surtout, la compensation positive n'exige pas que la vibration
-soit *purement* verticale : il suffit que la composante verticale de
-l'angle à la bouche corrèle, dans le bon sens, avec le temps de sortie
-$t_b$ (donc avec la vitesse initiale). Le mouvement horizontal ajoute du
-bruit sans détruire ce bénéfice, ce que confirme le succès empirique des
-tuners en benchrest .22 LR. Le modèle planaire est donc un modèle de
+relèvement (âme au-dessus du centre de gravité,
+section [1](#sec:intro){reference-type="ref" reference="sec:intro"}) est
+essentiellement vertical. Surtout, la compensation positive
+[\[eq:compensation\]](#eq:compensation){reference-type="eqref"
+reference="eq:compensation"} n'exige pas que la vibration soit
+*purement* verticale : il suffit que la composante verticale de l'angle
+à la bouche corrèle, dans le bon sens, avec le temps de sortie $t_b$
+(donc avec la vitesse initiale). Le mouvement horizontal ajoute du bruit
+sans détruire ce bénéfice, ce que confirme le succès empirique des
+tuners en benchrest .22 LR. Le modèle planaire est donc un modèle de
 *premier ordre* : utile et prédictif, mais qui sous-estime
 structurellement la dispersion réelle.
 
 # Bibliographie {#bibliographie .unnumbered}
 
-::: {.thebibliography}
+::: thebibliography
 9
 
 S. S. Rao, *Mechanical Vibrations*, Pearson, 2017.
@@ -935,16 +924,16 @@ G. Kolbe, *Using barrel vibrations to tune a barrel --- The Vibrations
 of a Barrel Tuned for Positive Compensation*, Border Barrels, 2015.
 
 G. Kolbe, *The Vibrations of a Barrel Tuned for Positive Compensation*
-(article en ligne, mise à jour du 18 novembre 2015),  
+(article en ligne, mise à jour du 18 novembre 2015),\
 <http://www.geoffrey-kolbe.com/articles/rimfire_accuracy/tuning_a_barrel.htm>.
 
 G. Kolbe, *Barrel Vibrations Simulator* (modèle « lumped parameter » par
 éléments finis et notes de modélisation, en ligne, consulté en juin
-2026),  
+2026),\
 <http://www.geoffrey-kolbe.com/articles/rimfire_accuracy/barrel_vibrations.htm>.
 
 A. Mallock, *Vibrations of Rifle Barrels*, Proceedings of the Royal
-Society, Vol. 68, p. 327, 1901.  
+Society, Vol. 68, p. 327, 1901.\
 <https://www.tireur.org/articles/Mall01.pdf>.
 
 C. Audette, *The Optimum Charge Weight (OCW) Method*, *Precision
