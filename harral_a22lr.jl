@@ -13,12 +13,35 @@
 #      dispersion verticale = |POI(1035 fps) − POI(1075 fps)|
 #   5. On balaie les masses de tuner de Harral (0, 4.9, 8.6, 16.0 oz).
 #
-# RÉSERVE : l'amplitude d'excitation, l'amortissement, les temps de sortie et
-# les rayons de raccordement du profil ne sont PAS publiés par Harral. On CALE
-# l'amplitude sur sa projection de bouche du canon nu (≈ −1.32 in) ; les valeurs
-# absolues sont donc des « ordres de grandeur calibrés », pas une reproduction
-# au centième. Le but est de retrouver la STRUCTURE du tableau 1 (canon nu =
-# dispersion minimale ; alourdir la bouche la dégrade).
+# GRAVITÉ : le poids propre du canon et celui du tuner sont appliqués (charges
+# cohérentes), et le transitoire DÉMARRE à l'équilibre statique. La colonne
+# `proj` de Harral est en effet une flèche STATIQUE, pas une vibration — il
+# l'écrit : « Gravity is applied and the stock deforms as well as the barrel
+# sag. That is why the muzzle starts out pointing approximately 1.35 inches
+# below zero. » Cette colonne est désormais reproduite SANS aucun calage ; le
+# reliquat (≈ 0.2-0.4 in) est la flèche de la CROSSE, que Harral inclut et que
+# nous ne modélisons pas encore.
+#
+# RÉSERVE — LA COLONNE `spread` N'EST TOUJOURS PAS REPRODUITE. Avec la culasse
+# encastrée, la carabine ne peut pas tourner en corps rigide au recul : il ne
+# reste que la flexion élastique, et la compensation positive n'apparaît pas.
+# Toutes les configs convergent vers ≈ 0.17 in — la dispersion NON compensée
+# (cf. ligne « bouche rigide ») — au lieu de la structure de Harral (0.091 nu,
+# croissant à 0.183). Ce n'est pas un défaut d'échelle : le système est
+# linéaire, aucun réglage de l'amplitude ne peut créer la compensation. Il
+# manque la ROTATION DE CORPS RIGIDE du fusil sur ses appuis. Harral :
+# « The stock contacts the simulated sandbag rests with zero friction in the
+# calculation. The rests are fixed in space. » — soit un APPUI UNILATÉRAL et
+# NON un encastrement : réaction verticale seule, ni effort horizontal, ni
+# moment ; l'arme est libre de reculer et de tourner, mais reste posée sur des
+# appuis fixes dans l'espace (c'est cette réaction qui permet la flèche).
+# Chantier suivant : remplacer l'encastrement par deux appuis sans frottement
+# (avant-bras + talon) + d.d.l. de corps rigide, puis flexibilité de la crosse.
+#
+# PIÈGE : chez Harral, tableau et graphiques n'ont pas la même référence —
+# « The sag due to gravity was in the calculations, but subtracted out for the
+# chart so the curves can more easily be compared. » La flèche est retirée des
+# COURBES, pas de la colonne `proj` du tableau 1 (qui part bien de −1.32 in).
 #
 # Table 1 de Harral (référence, pouces) :
 #   Config              proj(1035)  proj(1075)  vvel(1035) vvel(1075)  spread
@@ -206,8 +229,26 @@ function consistent_point_load(F, x, ndof_a)
     return Fa
 end
 
-function force_vector(t, x_p, ndof_a, h_offset)
+# Précharge de gravité : poids propre du canon (charge répartie cohérente sur
+# chaque élément) + poids du tuner (charge ponctuelle au nœud de bouche).
+# Constante dans le temps ⇒ calculée une fois, réutilisée à chaque pas.
+function gravity_force(m_tuner, ndof_a)
     F = zeros(ndof_a)
+    for e in 1:N_elements
+        A, _ = element_section(e)
+        q  = -ρ_steel * A * g_ms                  # N/m, vers le bas
+        Fe = q * L_e * [0.5, L_e/12, 0.5, -L_e/12]
+        for (k, idx_g) in enumerate((2*e-1, 2*e, 2*e+1, 2*e+2))
+            ia = idx_g - 2                        # décalage d'encastrement
+            1 <= ia <= ndof_a && (F[ia] += Fe[k])
+        end
+    end
+    F[end-1] += -m_tuner * g_ms                   # poids du tuner à la bouche
+    return F
+end
+
+function force_vector(t, x_p, ndof_a, h_offset, F_grav)
+    F = copy(F_grav)                                  # gravité, en permanence
     F[2] += chamber_pressure(t) * A_bore * h_offset   # moment de recul → θ₂
     xp = x_p(t)
     0 < xp < L && (F .+= consistent_point_load(-m_p * g_ms, xp, ndof_a))
@@ -226,11 +267,12 @@ end
 # -----------------------------------------------------------------------------
 # 10. NEWMARK-β (γ=1/2, β=1/4)
 # -----------------------------------------------------------------------------
-function newmark_solve(Ma, Ca, Ka, F_of_t, t_end, Δt)
+function newmark_solve(Ma, Ca, Ka, F_of_t, t_end, Δt; U0 = nothing)
     γ, β = 0.5, 0.25
     n = size(Ma, 1)
     ts = collect(0:Δt:t_end); Nt = length(ts)
     U = zeros(n, Nt); V = zeros(n, Nt); Ac = zeros(n, Nt)
+    U0 !== nothing && (U[:, 1] = U0)      # départ à l'équilibre statique
     Ac[:, 1] = Ma \ (F_of_t(ts[1]) - Ca*V[:,1] - Ka*U[:,1])
     Kf = factorize(Ma + γ*Δt*Ca + β*Δt^2*Ka)
     for i in 1:Nt-1
@@ -253,15 +295,25 @@ function simulate_shot(m_tuner, v_muzzle; h_offset, ζ1 = 0.01, ζ2 = 0.06,
     Ca     = rayleigh_damping(Ma, Ka, ωs[1], ωs[2], ζ1, ζ2)
     ndof_a = size(Ka, 1)
     x_p    = projectile_pos(v_muzzle)
-    ts, U, V = newmark_solve(Ma, Ca, Ka, t -> force_vector(t, x_p, ndof_a, h_offset), t_end, Δt)
+
+    F_grav = gravity_force(m_tuner, ndof_a)
+    U_stat = Ka \ F_grav                  # flèche statique sous gravité
+    ts, U, V = newmark_solve(Ma, Ca, Ka,
+                             t -> force_vector(t, x_p, ndof_a, h_offset, F_grav),
+                             t_end, Δt; U0 = U_stat)
 
     y_L  = U[end-1, :]      # déflexion transverse bouche (m)
     θ_L  = U[end,   :]      # angle bouche (rad)
     ẏ_L  = V[end-1, :]      # vitesse transverse bouche (m/s)
 
+    # Composante dynamique = écart à l'équilibre statique (gravité retirée).
+    θ_dyn = θ_L .- U_stat[end]
+
     t_b   = exit_time(v_muzzle)
     ib    = argmin(abs.(ts .- t_b))
-    return (ts=ts, y_L=y_L, θ_L=θ_L, ẏ_L=ẏ_L, t_b=ts[ib], ib=ib,
+    return (ts=ts, y_L=y_L, θ_L=θ_L, ẏ_L=ẏ_L, θ_dyn=θ_dyn,
+            y_stat=U_stat[end-1], θ_stat=U_stat[end],
+            t_b=ts[ib], ib=ib,
             θ_tb=θ_L[ib], ẏ_tb=ẏ_L[ib], f1=ωs[1]/(2π))
 end
 
@@ -291,21 +343,32 @@ end
 # -----------------------------------------------------------------------------
 const V_LO, V_HI = 315.47, 327.66              # 1035 et 1075 fps en m/s
 
-# Calibration ROBUSTE de l'amplitude d'excitation.
-# On NE peut pas caler sur la projection de bouche de Harral à t_b : dans notre
-# modèle (impulsion de recul brève sur un mode à ~28 ms de période) l'angle à
-# t_b est ~10× plus petit et de phase différente (§ rapport). On cale donc, de
-# façon stable, le PIC de |projection| du canon nu sur une valeur plausible
-# (1.5 in), pour que les tracés soient à l'échelle. Système linéaire ⇒ un tir.
-const PEAK_PROJ_TARGET = 1.5                    # pic |projection| visé (in)
+# Calibration de l'amplitude d'excitation — PARAMÈTRE NON CONTRAINT.
+#
+# Historique : on calait le pic de |projection| du canon nu sur 1.5 in, en
+# référence à la projection de bouche publiée par Harral (≈ −1.32 in). C'était
+# une ERREUR : ce nombre est une FLÈCHE STATIQUE sous gravité (« Gravity is
+# applied and the stock deforms as well as the barrel sag. That is why the
+# muzzle starts out pointing approximately 1.35 inches below zero. »), pas une
+# amplitude de vibration. Comparer l'une à l'autre gonflait l'excitation d'un
+# ordre de grandeur.
+#
+# La flèche statique est désormais produite par la gravité (§ gravity_force),
+# sans aucun calage. Il ne reste donc RIEN dans le tableau de Harral sur quoi
+# caler l'amplitude DYNAMIQUE : h_offset est un paramètre libre. La valeur
+# ci-dessous est un ordre de grandeur assumé, pas une mesure — le bras de
+# levier du moment de recul restera mal défini tant que la culasse sera
+# encastrée (il dépend de l'appui réel de la crosse : cf. rotation de corps
+# rigide, chantier à venir).
+const PEAK_DYN_PROJ = 0.15                # pic |projection| DYNAMIQUE visé (in)
 
 function calibrate_h_offset()
     h_ref = 1e-3
     res = simulate_shot(0.0, V_LO; h_offset = h_ref)
-    peak_ref = maximum(abs.(res.θ_L)) * D_TARGET_IN
-    h = h_ref * (PEAK_PROJ_TARGET / peak_ref)
-    @printf("Calibration robuste : pic |projection| nu visé = %.2f in → h_offset = %.2f mm\n",
-            PEAK_PROJ_TARGET, h*1e3)
+    peak_ref = maximum(abs.(res.θ_dyn)) * D_TARGET_IN   # dynamique seule
+    h = h_ref * (PEAK_DYN_PROJ / peak_ref)
+    @printf("Amplitude dynamique (paramètre libre) : pic visé = %.2f in → h_offset = %.2f mm\n",
+            PEAK_DYN_PROJ, h*1e3)
     return h
 end
 
@@ -363,7 +426,13 @@ let spread_rigid = abs((-DROP[1035]) - (-DROP[1075]))
 end
 println("-"^78)
 println("proj = projection de bouche (in) ; vv = vitesse verticale de bouche (in/s).")
-println("Harral cale l'excitation autrement ⇒ comparer la STRUCTURE, pas le centième.")
+println()
+println("proj : flèche statique sous gravité, reproduite SANS calage. La tendance")
+println("       de Harral (−1.32 → −2.42) est retrouvée ; le reliquat = la crosse,")
+println("       qu'il modélise et que nous ignorons.")
+println("spread : NON reproduit. Culasse encastrée ⇒ pas de rotation de corps rigide")
+println("       ⇒ pas de compensation : tout converge vers la dispersion non")
+println("       compensée (≈ ligne « bouche rigide »). Voir l'en-tête du fichier.")
 
 # -----------------------------------------------------------------------------
 # Tracés : contour du canon + courbes de projection de bouche
@@ -381,16 +450,22 @@ if PLOTS_AVAILABLE
     savefig(p_contour, "harral_contour.png")
     println("\n→ harral_contour.png")
 
-    # (b) Courbes de projection de bouche vs temps (proj = θ(L,t)·D_cible)
+    # (b) Courbes de projection de bouche vs temps, FLÈCHE STATIQUE RETIRÉE.
+    #     Même convention que Harral pour ses graphiques : « The sag due to
+    #     gravity was in the calculations, but subtracted out for the chart so
+    #     the curves can more easily be compared. » Sans cela, les courbes sont
+    #     décalées de −1.13 à −2.02 in et l'oscillation devient illisible.
+    #     ATTENTION : sa colonne `proj` du tableau 1, elle, GARDE la flèche.
     p_proj = plot(xlabel="Temps (ms)", ylabel="Projection de bouche à 50 yd (in)",
-                  title="Projection de bouche — sortie de balle marquée", legend=:topright)
+                  title="Projection de bouche — flèche statique retirée",
+                  legend=:topright)
     palette = [:black, :darkorange, :seagreen, :crimson]
     for (i, (name, m)) in enumerate(configs)
         r = results[name].r_lo
         mask = r.ts .<= 4e-3
-        plot!(p_proj, r.ts[mask].*1e3, r.θ_L[mask].*D_TARGET_IN,
+        plot!(p_proj, r.ts[mask].*1e3, r.θ_dyn[mask].*D_TARGET_IN,
               color=palette[i], lw=2, label=name)
-        scatter!(p_proj, [r.t_b*1e3], [r.θ_tb*D_TARGET_IN],
+        scatter!(p_proj, [r.t_b*1e3], [(r.θ_tb - r.θ_stat)*D_TARGET_IN],
                  color=palette[i], ms=5, label="")
     end
     vline!(p_proj, [exit_time(V_LO)*1e3], color=:gray, ls=:dash, label="t_b(1035)")
