@@ -916,6 +916,31 @@ tuners en benchrest .22 LR. Le modèle planaire est donc un modèle de
 *premier ordre* : utile et prédictif, mais qui sous-estime
 structurellement la dispersion réelle.
 
+#### 8. Un réglage spécifique à la distance.
+
+La vitesse angulaire optimale
+[\[eq:dthetaopt\]](#eq:dthetaopt){reference-type="eqref"
+reference="eq:dthetaopt"} est *proportionnelle à la distance de tir* :
+$\dot\theta_\text{out}^\star = -\,gD/(v_0^3\,\tau_v) \propto D$. Un
+tuner accordé pour $D = 50$ m ne réalise donc l'égalité
+[\[eq:compensation\]](#eq:compensation){reference-type="eqref"
+reference="eq:compensation"} qu'à cette distance ; à une autre distance,
+le terme balistique (en
+$\partial h_\text{bal}/\partial v_0 \propto D^2$) et le terme angulaire
+(en $\dot\theta_\text{out}\,D$) ne s'annulent plus exactement et la
+compensation devient *partielle* --- sous-compensation au-delà de la
+distance de réglage, sur-compensation en-deçà ---, la dispersion de
+vitesse réapparaissant graduellement en traînée verticale. Il faut en
+retenir que la compensation positive ne *réduit pas* la dispersion de
+vitesse initiale du lot (l'écart-type des vitesses reste inchangé) :
+elle en *masque* l'effet vertical, et seulement au voisinage de la
+distance de réglage. Un lot à faible écart-type de vitesse reste donc
+préférable, et un tuner gagne à être vérifié à la distance de la
+compétition. Le phénomène est néanmoins progressif : un réglage établi à
+courte distance conserve une part de son bénéfice à plus longue distance
+tant que le groupement intrinsèque reste inférieur à la traînée
+balistique qu'il corrige.
+
 # Bibliographie {#bibliographie .unnumbered}
 
 ::: thebibliography
