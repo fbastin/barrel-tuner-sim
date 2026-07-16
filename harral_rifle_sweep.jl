@@ -1,5 +1,5 @@
 # =============================================================================
-# Étape 2 du chantier « modèle de Harral » : LE FUSIL ENTIER SUR SES DEUX SACS
+# Étape 2/3 du chantier « modèle de Harral » : LE FUSIL ENTIER SUR SES DEUX SACS
 #
 # But : tester si la ROTATION DE CORPS RIGIDE de l'arme restaure la
 # compensation positive — c.-à-d. si la dispersion CROÎT avec la masse de
@@ -11,34 +11,46 @@
 # sur l'arme entière il ne donne qu'un chiffre, 10.5 lb. Ni crosse (matériau,
 # raideur, masse), ni position des sacs, ni hauteur d'âme, ni amortissement.
 # Caler ces inconnues pour retomber sur ses chiffres serait du curve-fitting.
-# On les BALAIE donc sur des plages plausibles, et on ne regarde qu'une chose :
-# LA STRUCTURE (spread croissante avec la masse) tient-elle sur toute la plage ?
-#   - sur toute la plage  → mécanisme confirmé, indépendant des valeurs choisies
-#   - dans un coin étroit → signal d'alarme, à dire
-#   - jamais              → le diagnostic « il manque la rotation » est FAUX
+# On les BALAIE donc, et on ne regarde qu'une chose : LA STRUCTURE (spread
+# croissante avec la masse) tient-elle sur toute la plage ?
 # Le succès NE se mesure PAS à l'écart aux chiffres de Harral.
 #
 # Ancrage réel (gratuit) : le budget de masse. Canon = 1.711 kg ; fusil total
-# = 10.5 lb = 4.763 kg ⇒ boîte + crosse = 3.052 kg (64 % de l'arme).
+# = 10.5 lb = 4.763 kg ⇒ boîte + crosse + avant-bras = 3.052 kg (64 % de l'arme).
 #
-# CHOIX DE MODÉLISATION (et leurs limites) :
-#  * Poutre plane unique, talon → bouche. Harral maille en briques solides 3D.
-#  * L'avant-bras est un membre PARALLÈLE au canon (canon flottant), pas
-#    modélisable dans une poutre unique : on reporte donc le sac avant sur la
-#    crosse, en arrière de la culasse. Le canon reste en PORTE-À-FAUX au-delà
-#    de l'appui avant — c'est cela qui produit l'affaissement de bouche.
-#  * Appuis = ressorts verticaux (sacs de sable), BILATÉRAUX. Justification :
-#    un sac est MOU. À k = 1e4..1e6 N/m sur 4.76 kg, la fréquence d'appui est
-#    de ~10 à ~100 Hz, soit une période très supérieure aux 2.4 ms de séjour de
-#    la balle : le sac n'a pas le temps de réagir, et bilatéral ≈ unilatéral
-#    sur cette fenêtre. (k est balayé : s'il s'avère déterminant, il faudra le
-#    contact unilatéral — le talon décolle — et ce sera à traiter.)
-#  * Le moment de recul est enfin ANCRÉ PHYSIQUEMENT : la force axiale
-#    p(t)·A_âme s'applique à la culasse, à la hauteur h_bore au-dessus de la
-#    ligne des sacs ⇒ moment de tangage p·A·h_bore. Avec la culasse encastrée
-#    ce bras de levier n'avait aucune référence et flottait librement.
-#  * Crosse + boîte : masse uniforme (l'acier de la boîte est en réalité bien
-#    plus dense que le bois du talon) et EI uniforme. Simplification assumée.
+# -----------------------------------------------------------------------------
+# HISTORIQUE — une version antérieure de ce script était FAUSSE. Elle reportait
+# le sac avant EN ARRIÈRE de la culasse, sur la crosse, faute de modéliser
+# l'avant-bras. Le sac avant se retrouvait alors DERRIÈRE le centre de gravité
+# (CG ≈ 16.8-19.5 in du talon selon la culasse ; sacs testés : 11.7-20.2 in) :
+# l'arme BASCULAIT vers l'avant et n'était retenue que par un sac arrière
+# TIRANT VERS LE BAS. Avec des appuis bilatéraux, c'est silencieux mais
+# physiquement impossible ; le contact unilatéral l'a exposé en faisant
+# décoller l'appui, laissant l'arme sur un seul point ⇒ raideur singulière ⇒
+# divergence (spreads à 1e8 in). Le « 74 % de configs conformes à Harral » issu
+# de cette version est CONTAMINÉ et ne doit pas être cité.
+#
+# CORRECTIF (version actuelle) : l'avant-bras est modélisé pour ce qu'il est —
+# un membre PARALLÈLE au canon (canon flottant), partant de la boîte vers
+# l'avant, avec le sac avant sous son extrémité. Structure RAMIFIÉE : deux
+# chaînes d'éléments (canon et avant-bras) partagent le nœud de culasse. Le CG
+# se retrouve ainsi ENTRE les deux sacs, comme sur une vraie arme.
+# -----------------------------------------------------------------------------
+#
+# AUTRES CHOIX DE MODÉLISATION (et leurs limites) :
+#  * Poutre plane. Harral maille en briques solides 3D à 8 nœuds.
+#  * Le canon reste en PORTE-À-FAUX au-delà de l'appui avant : c'est cela qui
+#    produit l'affaissement de bouche (les ≈ −1.32 in de Harral).
+#  * Appuis = ressorts verticaux (sacs), en COMPRESSION SEULE par défaut
+#    (`unilateral=true`) : le talon peut décoller. L'option `unilateral=false`
+#    permet de mesurer l'effet de cette hypothèse — c'est elle qui masquait le
+#    défaut ci-dessus.
+#  * Le moment de recul est ANCRÉ PHYSIQUEMENT : la force axiale p(t)·A_âme
+#    s'applique à la culasse, à la hauteur h_bore au-dessus de la ligne des
+#    sacs ⇒ moment de tangage p·A·h_bore. Avec la culasse encastrée, ce bras de
+#    levier n'avait aucune référence et flottait librement.
+#  * Crosse + boîte + avant-bras : masse et EI UNIFORMES (l'acier de la boîte
+#    est en réalité bien plus dense que le bois). Simplification assumée.
 #
 # Usage :  julia harral_rifle_sweep.jl
 # =============================================================================
@@ -56,124 +68,225 @@ const M_BARREL      = sum(begin
                               A, _ = element_section(e)
                               ρ_steel * A * L_e
                           end for e in 1:N_elements)
-const M_STOCK       = M_RIFLE_TOTAL - M_BARREL   # boîte + crosse
+const M_STOCK       = M_RIFLE_TOTAL - M_BARREL   # boîte + crosse + avant-bras
+
+const N_STOCK = 16      # talon → culasse
+const N_BAR   = N_elements   # culasse → bouche (48)
+const N_FORE  = 8       # culasse → pointe d'avant-bras
 
 # -----------------------------------------------------------------------------
-# Maillage du fusil entier : x = 0 au talon, culasse en x_breech, bouche au bout
+# TOPOLOGIE RAMIFIÉE
+#   chaîne crosse  : nœuds 1 … N_STOCK+1        (x = 0 … x_breech)
+#   chaîne canon   : repart du nœud de culasse  (x = x_breech … x_breech+L)
+#   chaîne av.-bras: repart du nœud de culasse  (x = x_breech … x_breech+L_fore)
+# Les deux dernières sont PARALLÈLES : elles ne se touchent qu'à la culasse.
 # -----------------------------------------------------------------------------
-const N_STOCK = 16
-const N_BAR   = N_elements                        # 48, comme le canon nu
-
-function rifle_mesh(x_breech)
-    xs_stock = collect(range(0.0, x_breech, length = N_STOCK + 1))
-    xs_bar   = collect(range(x_breech, x_breech + L, length = N_BAR + 1))
-    return vcat(xs_stock, xs_bar[2:end])          # nœuds, m
-end
-
-nearest_node(xs, x) = argmin(abs.(xs .- x))
-
-# Propriétés d'un élément : (EI, ρA)
-function rifle_element(e, xs, x_breech, EI_stock)
-    if e <= N_STOCK
-        return EI_stock, M_STOCK / x_breech
-    else
-        x_mid = 0.5 * (xs[e] + xs[e+1]) - x_breech     # abscisse LOCALE canon
-        D = D_out_of_x(x_mid)
-        A = π/4  * (D^2 - D_bore^2)
-        I = π/64 * (D^4 - D_bore^4)
-        return E * I, ρ_steel * A
+function rifle_topology(x_breech, L_fore)
+    nn = (N_STOCK + 1) + N_BAR + N_FORE
+    xs = zeros(nn)
+    for i in 1:(N_STOCK+1)
+        xs[i] = (i-1) * x_breech / N_STOCK
     end
+    i_breech = N_STOCK + 1
+    for k in 1:N_BAR
+        xs[i_breech + k] = x_breech + k * L / N_BAR
+    end
+    off = i_breech + N_BAR
+    for k in 1:N_FORE
+        xs[off + k] = x_breech + k * L_fore / N_FORE
+    end
+
+    els = Tuple{Int,Int,Float64,Symbol}[]
+    for e in 1:N_STOCK
+        push!(els, (e, e+1, x_breech/N_STOCK, :stock))
+    end
+    prev = i_breech
+    for k in 1:N_BAR
+        push!(els, (prev, i_breech+k, L/N_BAR, :barrel)); prev = i_breech+k
+    end
+    prev = i_breech
+    for k in 1:N_FORE
+        push!(els, (prev, off+k, L_fore/N_FORE, :fore)); prev = off+k
+    end
+    return (xs=xs, els=els, nn=nn, i_breech=i_breech,
+            i_muzzle=i_breech+N_BAR, i_foretip=off+N_FORE)
 end
 
-# -----------------------------------------------------------------------------
-# Assemblage : K, M, et le vecteur de gravité (aucun d.d.l. supprimé — l'arme
-# n'est PAS encastrée ; ce sont les ressorts d'appui qui la tiennent)
-# -----------------------------------------------------------------------------
-function build_rifle(; m_tuner, x_breech, x_front, x_rear, EI_stock, k_rest)
-    xs = rifle_mesh(x_breech)
-    nn = length(xs)
-    nd = 2 * nn
-    K = zeros(nd, nd); M = zeros(nd, nd); Fg = zeros(nd)
+dofs_of(n1, n2) = (2*n1-1, 2*n1, 2*n2-1, 2*n2)
 
-    for e in 1:(nn - 1)
-        le = xs[e+1] - xs[e]
-        EI, ρA = rifle_element(e, xs, x_breech, EI_stock)
+function build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest)
+    T  = rifle_topology(x_breech, L_fore)
+    nd = 2 * T.nn
+    K  = zeros(nd, nd); M = zeros(nd, nd); Fg = zeros(nd)
+    ρA_stock = M_STOCK / (x_breech + L_fore)      # masse répartie sur crosse+av.-bras
+
+    for (n1, n2, le, kind) in T.els
+        if kind === :barrel
+            x_mid = 0.5*(T.xs[n1] + T.xs[n2]) - x_breech   # abscisse LOCALE canon
+            D = D_out_of_x(x_mid)
+            A = π/4  * (D^2 - D_bore^2)
+            I = π/64 * (D^4 - D_bore^4)
+            EI, ρA = E * I, ρ_steel * A
+        else
+            EI, ρA = EI_stock, ρA_stock
+        end
         Ke, Me = element_matrices(le, EI, ρA)
-        idx = (2*e - 1):(2*e + 2)
+        idx = collect(dofs_of(n1, n2))
         @views K[idx, idx] .+= Ke
         @views M[idx, idx] .+= Me
-        q  = -ρA * g_ms                                  # N/m, vers le bas
-        Fe = q * le * [0.5, le/12, 0.5, -le/12]
-        @views Fg[idx] .+= Fe
+        q  = -ρA * g_ms
+        @views Fg[idx] .+= q * le * [0.5, le/12, 0.5, -le/12]
     end
 
-    # Tuner à la bouche (dernier nœud)
-    M[nd-1, nd-1] += m_tuner
-    M[nd,   nd]   += tuner_inertia(m_tuner)
-    Fg[nd-1]      += -m_tuner * g_ms
+    dm = 2*T.i_muzzle - 1
+    M[dm, dm]     += m_tuner
+    M[dm+1, dm+1] += tuner_inertia(m_tuner)
+    Fg[dm]        += -m_tuner * g_ms
 
-    # Sacs de sable : ressorts VERTICAUX seuls (contact sans frottement)
-    i_rear  = nearest_node(xs, x_rear)
-    i_front = nearest_node(xs, x_front)
-    K[2*i_rear  - 1, 2*i_rear  - 1] += k_rest
-    K[2*i_front - 1, 2*i_front - 1] += k_rest
+    i_rear = argmin(abs.(T.xs[1:(N_STOCK+1)] .- x_rear))   # sac arrière : sur la crosse
+    spring_dofs = [2*i_rear - 1, 2*T.i_foretip - 1]        # sac avant : pointe d'avant-bras
 
-    i_breech = N_STOCK + 1
-    return (K=K, M=M, Fg=Fg, xs=xs, nd=nd, i_breech=i_breech,
-            i_rear=i_rear, i_front=i_front)
+    return (K=K, M=M, Fg=Fg, T=T, nd=nd, spring_dofs=spring_dofs)
 end
 
-# Charge ponctuelle cohérente sur un maillage quelconque
-function point_load_rifle(Fval, x, xs, nd)
-    (x <= xs[1] || x >= xs[end]) && return zeros(nd)
-    e = searchsortedlast(xs, x); e = clamp(e, 1, length(xs) - 1)
-    le = xs[e+1] - xs[e]
-    ξ  = (x - xs[e]) / le
-    Ns = (1 - 3ξ^2 + 2ξ^3, le*(ξ - 2ξ^2 + ξ^3), 3ξ^2 - 2ξ^3, le*(-ξ^2 + ξ^3))
-    F = zeros(nd)
-    for (k, ig) in enumerate((2*e-1, 2*e, 2*e+1, 2*e+2))
-        F[ig] += Fval * Ns[k]
+# Centre de gravité (contrôle de stabilité : doit tomber ENTRE les deux sacs)
+function rifle_cg(x_breech, L_fore)
+    T = rifle_topology(x_breech, L_fore)
+    ρA_stock = M_STOCK / (x_breech + L_fore)
+    num = 0.0; den = 0.0
+    for (n1, n2, le, kind) in T.els
+        m = (kind === :barrel) ? begin
+                x_mid = 0.5*(T.xs[n1]+T.xs[n2]) - x_breech
+                D = D_out_of_x(x_mid); ρ_steel * π/4 * (D^2 - D_bore^2) * le
+            end : ρA_stock * le
+        num += m * 0.5*(T.xs[n1]+T.xs[n2]); den += m
     end
-    return F
+    return num/den
+end
+
+# -----------------------------------------------------------------------------
+# CONTACT UNILATÉRAL : la surface du sac est fixe en y = 0 ; l'arme repose
+# DESSUS. Un ressort ne travaille qu'en compression (nœud pénétrant, y < 0).
+# Si y > 0, l'appui a décollé et ne rend rien. 2 appuis ⇒ 4 états (masque).
+# -----------------------------------------------------------------------------
+function contact_mask(u, spring_dofs; unilateral = true)
+    unilateral || return (1 << length(spring_dofs)) - 1
+    m = 0
+    for (j, d) in enumerate(spring_dofs)
+        u[d] < 0 && (m |= (1 << (j-1)))
+    end
+    return m
+end
+
+function K_with_mask(K0, spring_dofs, k_rest, mask)
+    Kk = copy(K0)
+    for (j, d) in enumerate(spring_dofs)
+        ((mask >> (j-1)) & 1) == 1 && (Kk[d, d] += k_rest)
+    end
+    return Kk
+end
+
+# Équilibre statique sous gravité. Renvoie aussi `stable` : si un appui décolle
+# sous la SEULE gravité, l'arme bascule — la raideur devient singulière (mode de
+# rotation libre) et toute valeur calculée serait du bruit. Config à REJETER.
+function static_contact(K0, spring_dofs, k_rest, Fg; unilateral = true)
+    full = (1 << length(spring_dofs)) - 1
+    U = K_with_mask(K0, spring_dofs, k_rest, full) \ Fg
+    stable = contact_mask(U, spring_dofs; unilateral) == full
+    return U, full, stable
+end
+
+function newmark_contact(M, C, K0, spring_dofs, k_rest, F_of_t, t_end, Δt;
+                         U0, unilateral = true)
+    γ, β = 0.5, 0.25
+    n  = size(M, 1)
+    ts = collect(0:Δt:t_end); Nt = length(ts)
+    U  = zeros(n, Nt); V = zeros(n, Nt); Ac = zeros(n, Nt)
+    U[:, 1] = U0
+
+    nmask = 1 << length(spring_dofs)
+    Kmat = Dict(m => K_with_mask(K0, spring_dofs, k_rest, m) for m in 0:(nmask-1))
+    # (M + γΔtC + βΔt²K) reste défini positif même sans appui : M régularise.
+    Kfac = Dict(m => factorize(M + γ*Δt*C + β*Δt^2*Kmat[m]) for m in 0:(nmask-1))
+
+    m0 = contact_mask(U0, spring_dofs; unilateral)
+    Ac[:, 1] = M \ (F_of_t(ts[1]) - C*V[:,1] - Kmat[m0]*U[:,1])
+
+    n_lift = 0
+    for i in 1:Nt-1
+        up = U[:,i] + Δt*V[:,i] + Δt^2*(0.5-β)*Ac[:,i]
+        vp = V[:,i] + Δt*(1-γ)*Ac[:,i]
+        Fi = F_of_t(ts[i+1])
+        mask = contact_mask(U[:,i], spring_dofs; unilateral)
+        a = zeros(n); u = zeros(n)
+        for _ in 1:6                        # itération d'ensemble actif
+            a = Kfac[mask] \ (Fi - C*vp - Kmat[mask]*up)
+            u = up + β*Δt^2*a
+            nm = contact_mask(u, spring_dofs; unilateral)
+            nm == mask && break
+            mask = nm
+        end
+        mask != (nmask-1) && (n_lift += 1)
+        Ac[:, i+1] = a; U[:, i+1] = u; V[:, i+1] = vp + γ*Δt*a
+    end
+    return ts, U, V, n_lift / (Nt-1)
 end
 
 # -----------------------------------------------------------------------------
 # Un tir sur le fusil entier
 # -----------------------------------------------------------------------------
-function shoot_rifle(v_muzzle; m_tuner, x_breech, x_front, x_rear, EI_stock,
-                     k_rest, h_bore, ζ1 = 0.01, ζ2 = 0.06,
+function point_load_barrel(Fval, x_global, T, x_breech, nd)
+    le = L / N_BAR
+    s  = x_global - x_breech
+    (s <= 0 || s >= L) && return zeros(nd)
+    k  = clamp(ceil(Int, s / le), 1, N_BAR)
+    n1 = (k == 1) ? T.i_breech : T.i_breech + k - 1
+    n2 = T.i_breech + k
+    ξ  = (s - (k-1)*le) / le
+    Ns = (1 - 3ξ^2 + 2ξ^3, le*(ξ - 2ξ^2 + ξ^3), 3ξ^2 - 2ξ^3, le*(-ξ^2 + ξ^3))
+    F = zeros(nd)
+    for (j, d) in enumerate(dofs_of(n1, n2))
+        F[d] += Fval * Ns[j]
+    end
+    return F
+end
+
+function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
+                     k_rest, h_bore, unilateral = true, ζ1 = 0.01, ζ2 = 0.06,
                      Δt = 2e-6, t_end = 3.0e-3)
-    S = build_rifle(; m_tuner, x_breech, x_front, x_rear, EI_stock, k_rest)
-    _, ωs = modal_analysis(S.K, S.M; n_modes = 3)
-    C  = rayleigh_damping(S.M, S.K, ωs[1], ωs[2], ζ1, ζ2)
+    S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest)
     xp = projectile_pos(v_muzzle)
 
-    U_stat = S.K \ S.Fg                       # équilibre statique sur les sacs
+    U_stat, mask0, stable = static_contact(S.K, S.spring_dofs, k_rest, S.Fg; unilateral)
+    stable || return nothing                 # l'arme bascule ⇒ config rejetée
 
+    K_lin = K_with_mask(S.K, S.spring_dofs, k_rest, mask0)
+    _, ωs = modal_analysis(K_lin, S.M; n_modes = 3)
+    C = rayleigh_damping(S.M, K_lin, ωs[1], ωs[2], ζ1, ζ2)
+
+    d_breech_θ = 2 * S.T.i_breech
     function F_of_t(t)
         F = copy(S.Fg)
-        # Moment de tangage : force axiale × hauteur d'âme au-dessus des sacs
-        F[2 * S.i_breech] += chamber_pressure(t) * A_bore * h_bore
-        xg = x_breech + xp(t)                 # position ABSOLUE du projectile
-        if x_breech < xg < x_breech + L
-            F .+= point_load_rifle(-m_p * g_ms, xg, S.xs, S.nd)
-        end
+        F[d_breech_θ] += chamber_pressure(t) * A_bore * h_bore   # moment de tangage
+        F .+= point_load_barrel(-m_p * g_ms, x_breech + xp(t), S.T, x_breech, S.nd)
         return F
     end
 
-    ts, U, V = newmark_solve(S.M, C, S.K, F_of_t, t_end, Δt; U0 = U_stat)
+    ts, U, V, f_lift = newmark_contact(S.M, C, S.K, S.spring_dofs, k_rest,
+                                       F_of_t, t_end, Δt; U0 = U_stat, unilateral)
 
+    dm  = 2 * S.T.i_muzzle - 1
     t_b = exit_time(v_muzzle)
     ib  = argmin(abs.(ts .- t_b))
-    return (θ_tb = U[S.nd, ib], ẏ_tb = V[S.nd - 1, ib],
-            θ_stat = U_stat[S.nd], y_stat = U_stat[S.nd - 1],
-            f1 = ωs[1] / (2π))
+    return (θ_tb = U[dm+1, ib], ẏ_tb = V[dm, ib],
+            θ_stat = U_stat[dm+1], f1 = ωs[1]/(2π), f_lift = f_lift)
 end
 
 function spread_for(m_tuner; kw...)
     r_lo = shoot_rifle(V_LO; m_tuner = m_tuner, kw...)
     r_hi = shoot_rifle(V_HI; m_tuner = m_tuner, kw...)
-    poi(r, vfps) = r.θ_tb * D_TARGET_IN + (r.ẏ_tb * M2IN) * TOF(DROP[vfps]) - DROP[vfps]
+    (r_lo === nothing || r_hi === nothing) && return nothing, nothing
+    poi(r, v) = r.θ_tb * D_TARGET_IN + (r.ẏ_tb * M2IN) * TOF(DROP[v]) - DROP[v]
     return abs(poi(r_lo, 1035) - poi(r_hi, 1075)), r_lo
 end
 
@@ -184,90 +297,139 @@ const TUNERS = [0.0, 4.9*OZ, 8.6*OZ, 16.0*OZ]
 const HARRAL = [0.0910, 0.1218, 0.1554, 0.1832]
 
 # Plages plausibles (pratique benchrest) — AUCUNE n'est publiée par Harral.
-const X_BREECH  = [18.0, 20.0, 22.0] .* IN      # culasse depuis le talon
-const F_FRONT   = [0.65, 0.80, 0.92]            # sac avant, en fraction de x_breech
-const EI_STOCK  = [3.0e3, 1.0e4, 4.0e4]         # raideur crosse+boîte (N·m²)
-const H_BORE    = [1.0, 2.0, 3.0] .* IN         # âme au-dessus de la ligne des sacs
-const K_REST    = [1.0e4, 1.0e5, 1.0e6]         # raideur d'un sac (N/m)
-const X_REAR    = 1.5 * IN                      # sac arrière, près du talon
+const X_BREECH = [18.0, 20.0, 22.0] .* IN   # culasse depuis le talon
+const L_FORE   = [6.0, 10.0, 14.0] .* IN    # avant-bras EN AVANT de la culasse
+const EI_STOCK = [3.0e3, 1.0e4, 4.0e4]      # raideur crosse/boîte/avant-bras (N·m²)
+const H_BORE   = [1.0, 2.0, 3.0] .* IN      # âme au-dessus de la ligne des sacs
+const K_REST   = [1.0e4, 1.0e5, 1.0e6]      # raideur d'un sac (N/m)
+const X_REAR   = 1.5 * IN                   # sac arrière, près du talon
+
+function run_sweep(; unilateral)
+    rows = NamedTuple[]; n_reject = 0
+    for xb in X_BREECH, lf in L_FORE, eis in EI_STOCK, hb in H_BORE, kr in K_REST
+        kw = (x_breech=xb, L_fore=lf, x_rear=X_REAR, EI_stock=eis,
+              k_rest=kr, h_bore=hb, unilateral=unilateral)
+        sp = Float64[]; local r0; bad = false
+        for m in TUNERS
+            s, r = spread_for(m; kw...)
+            if s === nothing || !isfinite(s); bad = true; break; end
+            push!(sp, s); m == 0.0 && (r0 = r)
+        end
+        if bad; n_reject += 1; continue; end
+        push!(rows, (xb=xb, lf=lf, eis=eis, hb=hb, kr=kr, sp=copy(sp),
+                     Δ=sp[end]-sp[1], mono=all(diff(sp) .> 0),
+                     proj=r0.θ_stat*D_TARGET_IN, f1=r0.f1, f_lift=r0.f_lift))
+    end
+    return rows, n_reject
+end
+
+function report(rows, n_reject, title)
+    n = length(rows)
+    if n == 0
+        println("-"^78); println(title)
+        @printf("  AUCUNE configuration valide (%d rejetées).\n", n_reject)
+        return nothing
+    end
+    println("-"^78); println(title)
+    @printf("Configurations valides : %d   (rejetées — l'arme bascule : %d)\n", n, n_reject)
+    @printf("  tendance CROISSANTE (spread(16oz) > spread(nu)) : %d / %d  (%.0f %%)\n",
+            count(r->r.Δ>0, rows), n, 100*count(r->r.Δ>0, rows)/n)
+    @printf("  croissance STRICTEMENT MONOTONE sur les 4 masses : %d / %d  (%.0f %%)\n",
+            count(r->r.mono, rows), n, 100*count(r->r.mono, rows)/n)
+    @printf("  configs où un appui DÉCOLLE (>1 %% du temps) : %d / %d  (%.0f %%)\n",
+            count(r->r.f_lift>0.01, rows), n, 100*count(r->r.f_lift>0.01, rows)/n)
+    @printf("  flèche statique de bouche : %.2f … %.2f in   (Harral : −1.32 in)\n",
+            minimum(r->r.proj, rows), maximum(r->r.proj, rows))
+    println("-"^78)
+    return rows[argmax([r.Δ for r in rows])]
+end
 
 function main_sweep()
     println("="^78)
-    println(" Étape 2 — fusil entier sur deux sacs : LA STRUCTURE APPARAÎT-ELLE ?")
+    println(" Étape 2/3 — fusil entier sur deux sacs, avant-bras modélisé")
     println("="^78)
-    @printf("Budget de masse : canon %.3f kg + (boîte+crosse) %.3f kg = %.3f kg (%.1f lb)\n",
+    @printf("Budget de masse : canon %.3f kg + (boîte+crosse+av.-bras) %.3f kg = %.3f kg (%.1f lb)\n",
             M_BARREL, M_STOCK, M_RIFLE_TOTAL, M_RIFLE_TOTAL/0.45359237)
     @printf("Harral (référence) : spread %.3f → %.3f in (CROISSANT)\n", HARRAL[1], HARRAL[end])
     @printf("Culasse encastrée (étape 1) : ≈ 0.171 → 0.164 in (plat, non compensé)\n\n")
 
-    n_ok = 0; n_mono = 0; n_tot = 0
-    best = nothing; worst = nothing
-    rows = NamedTuple[]
-
-    for xb in X_BREECH, ff in F_FRONT, eis in EI_STOCK, hb in H_BORE, kr in K_REST
-        kw = (x_breech = xb, x_front = ff*xb, x_rear = X_REAR,
-              EI_stock = eis, k_rest = kr, h_bore = hb)
-        sp = Float64[]
-        local r0
-        ok = true
-        try
-            for m in TUNERS
-                s, r = spread_for(m; kw...)
-                push!(sp, s)
-                m == 0.0 && (r0 = r)
-            end
-        catch err
-            ok = false
-        end
-        ok || continue
-
-        n_tot += 1
-        Δ    = sp[end] - sp[1]                      # > 0 ⇒ tendance de Harral
-        mono = all(diff(sp) .> 0)
-        Δ > 0 && (n_ok += 1)
-        mono && (n_mono += 1)
-        push!(rows, (xb=xb, ff=ff, eis=eis, hb=hb, kr=kr, sp=copy(sp), Δ=Δ,
-                     mono=mono, proj=r0.θ_stat*D_TARGET_IN, f1=r0.f1))
-        if best === nothing || Δ > best.Δ;  best  = rows[end]; end
-        if worst === nothing || Δ < worst.Δ; worst = rows[end]; end
+    println("Contrôle de stabilité — le CG doit tomber ENTRE les deux sacs :")
+    for xb in X_BREECH, lf in L_FORE
+        cg = rifle_cg(xb, lf); xf = xb + lf
+        @printf("  culasse %.0f in, avant-bras %.0f in → sac avant à %.1f in, CG à %.1f in : %s\n",
+                xb*M2IN, lf*M2IN, xf*M2IN, cg*M2IN, cg < xf ? "OK" : "⚠ BASCULE")
     end
+    println()
 
-    println("-"^78)
-    @printf("Configurations balayées : %d\n", n_tot)
-    @printf("  tendance CROISSANTE (spread(16oz) > spread(nu)) : %d / %d  (%.0f %%)\n",
-            n_ok, n_tot, 100*n_ok/n_tot)
-    @printf("  croissance STRICTEMENT MONOTONE sur les 4 masses : %d / %d  (%.0f %%)\n",
-            n_mono, n_tot, 100*n_mono/n_tot)
-    println("-"^78)
+    rows_bi, rej_bi = run_sweep(unilateral = false)
+    report(rows_bi, rej_bi, "APPUIS BILATÉRAUX (le sac peut TIRER — hypothèse à tester)")
+    rows, rej = run_sweep(unilateral = true)
+    best = report(rows, rej, "CONTACT UNILATÉRAL (compression seule — le talon décolle)")
 
-    for (lbl, r) in (("Δ MAXIMAL", best), ("Δ MINIMAL", worst))
-        println("\n$lbl :")
-        @printf("  x_breech=%.1f in  sac_avant=%.2f·x_b  EI_crosse=%.0e  h_âme=%.1f in  k_sac=%.0e\n",
-                r.xb*M2IN, r.ff, r.eis, r.hb*M2IN, r.kr)
-        @printf("  proj statique bouche = %+.3f in   (Harral : −1.32 in)   f₁=%.1f Hz\n",
-                r.proj, r.f1)
-        @printf("  spread : %s\n", join([@sprintf("%.4f", s) for s in r.sp], "  "))
+    if best !== nothing && !isempty(rows_bi)
+        println("\nEffet du contact unilatéral, par raideur de sac (fraction de Δ>0) :")
+        for kr in K_REST
+            b = filter(r->r.kr==kr, rows_bi); u = filter(r->r.kr==kr, rows)
+            (isempty(b) || isempty(u)) && continue
+            @printf("  k_sac=%-8.0e : bilatéral %3.0f %%  →  unilatéral %3.0f %%   (décollement : %3.0f %% des configs)\n",
+                    kr, 100*count(r->r.Δ>0,b)/length(b), 100*count(r->r.Δ>0,u)/length(u),
+                    100*count(r->r.f_lift>0.01,u)/length(u))
+        end
+
+        println("\nMEILLEURE configuration (Δ maximal, contact unilatéral) :")
+        @printf("  culasse=%.0f in  avant-bras=%.0f in  EI=%.0e  h_âme=%.1f in  k_sac=%.0e\n",
+                best.xb*M2IN, best.lf*M2IN, best.eis, best.hb*M2IN, best.kr)
+        @printf("  proj statique = %+.3f in (Harral −1.32)   f₁=%.1f Hz   décollement %.0f %% du temps\n",
+                best.proj, best.f1, 100*best.f_lift)
+        @printf("  spread : %s\n", join([@sprintf("%.4f", s) for s in best.sp], "  "))
         @printf("  Harral : %s\n", join([@sprintf("%.4f", s) for s in HARRAL], "  "))
-        @printf("  Δ(16oz − nu) = %+.4f in   %s\n", r.Δ,
-                r.Δ > 0 ? "(sens de Harral)" : "(sens OPPOSÉ)")
-    end
 
-    # Sensibilité : quel paramètre gouverne le signe de Δ ?
-    println("\n" * "-"^78)
-    println("Sensibilité du signe de Δ à chaque inconnue (fraction de Δ>0) :")
-    for (nm, get, vals) in (("x_breech (in)", r->r.xb*M2IN, X_BREECH .* M2IN),
-                            ("sac_avant/x_b", r->r.ff,      F_FRONT),
-                            ("EI_crosse",     r->r.eis,     EI_STOCK),
-                            ("h_âme (in)",    r->r.hb*M2IN, H_BORE .* M2IN),
-                            ("k_sac (N/m)",   r->r.kr,      K_REST))
-        parts = String[]
-        for v in vals
-            sel = filter(r -> isapprox(get(r), v; rtol=1e-6), rows)
-            isempty(sel) && continue
-            frac = 100 * count(r -> r.Δ > 0, sel) / length(sel)
-            push!(parts, @sprintf("%.6g→%3.0f%%", v, frac))
+        # ---------------------------------------------------------------------
+        # FILTRE PHYSIQUE — et ce n'est PAS du curve-fitting.
+        # Harral publie DEUX colonnes indépendantes : `proj` (flèche statique de
+        # bouche, −1.32 in) et `spread` (dispersion). On se sert de la PREMIÈRE
+        # pour éliminer les configurations absurdes — le balayage produit des
+        # crosses qui fléchissent de 9 pouces ! — puis on TESTE la seconde, que
+        # rien n'a calée. Caler sur `spread` serait tricher ; caler sur `proj`
+        # et prédire `spread`, c'est la démarche normale.
+        # ---------------------------------------------------------------------
+        adm = filter(r -> abs(r.proj - (-1.32)) <= 0.25, rows)
+        println("\n" * "-"^78)
+        println("CONFIGS PHYSIQUEMENT ADMISSIBLES : flèche statique = −1.32 ± 0.25 in")
+        println("(contrainte tirée de la colonne `proj` de Harral — INDÉPENDANTE de `spread`)")
+        if isempty(adm)
+            println("  aucune — les plages balayées ne contiennent pas l'arme de Harral.")
+        else
+            @printf("  %d / %d configurations retenues\n", length(adm), length(rows))
+            @printf("  tendance CROISSANTE : %d / %d  (%.0f %%)\n",
+                    count(r->r.Δ>0, adm), length(adm), 100*count(r->r.Δ>0, adm)/length(adm))
+            @printf("  STRICTEMENT MONOTONE : %d / %d  (%.0f %%)\n",
+                    count(r->r.mono, adm), length(adm), 100*count(r->r.mono, adm)/length(adm))
+            sp1 = [r.sp[1] for r in adm]; sp4 = [r.sp[end] for r in adm]
+            @printf("  spread canon nu  : %.3f … %.3f in   (Harral : %.3f)\n",
+                    minimum(sp1), maximum(sp1), HARRAL[1])
+            @printf("  spread + 16.0 oz : %.3f … %.3f in   (Harral : %.3f)\n",
+                    minimum(sp4), maximum(sp4), HARRAL[end])
+            println("  EI de crosse retenus : ",
+                    join(sort(unique([@sprintf("%.0e", r.eis) for r in adm])), ", "))
         end
-        @printf("  %-14s : %s\n", nm, join(parts, "   "))
+
+        println("\n" * "-"^78)
+        println("Sensibilité du signe de Δ à chaque inconnue (contact unilatéral) :")
+        for (nm, get, vals) in (("culasse (in)",  r->r.xb*M2IN, X_BREECH .* M2IN),
+                                ("av.-bras (in)", r->r.lf*M2IN, L_FORE .* M2IN),
+                                ("EI crosse",     r->r.eis,     EI_STOCK),
+                                ("h_âme (in)",    r->r.hb*M2IN, H_BORE .* M2IN),
+                                ("k_sac (N/m)",   r->r.kr,      K_REST))
+            parts = String[]
+            for v in vals
+                sel = filter(r -> isapprox(get(r), v; rtol=1e-6), rows)
+                isempty(sel) && continue
+                push!(parts, @sprintf("%.6g→%3.0f%%", v,
+                                      100*count(r->r.Δ>0, sel)/length(sel)))
+            end
+            @printf("  %-14s : %s\n", nm, join(parts, "   "))
+        end
     end
     println("="^78)
 end
