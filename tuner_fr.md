@@ -892,6 +892,31 @@ document doivent être lues comme des *ordres de grandeur calibrés*, non
 comme des prédictions absolues. La validation expérimentale directe
 reste la référence pour le rimfire.
 
+#### 7. Un modèle planaire : vibration verticale seulement.
+
+Une seconde réserve d'honnêteté porte sur la dimensionnalité du modèle.
+Tout le développement précédent est *planaire* : la poutre
+d'Euler-Bernoulli n'est résolue que dans un seul plan et ne décrit que
+la composante *verticale* de l'oscillation de bouche. Rien n'oblige
+pourtant le canon à ne vibrer que verticalement : en réalité la bouche
+décrit une *orbite bidimensionnelle* (un « whip » elliptique), et sa
+composante horizontale --- déjà signalée comme non compensée au point 4
+--- n'est corrigée par aucun mécanisme de compensation positive. Elle
+s'ajoute en dispersion résiduelle et fixe un plancher à la précision
+atteignable. Si le modèle vertical reste néanmoins pertinent au premier
+ordre, c'est que *deux effets brisent la symétrie* et privilégient le
+plan vertical : la *gravité*, qui impose une flèche statique et oriente
+le mode dominant ; et la *géométrie du recul*, dont le couple de
+relèvement (âme au-dessus du centre de gravité) est essentiellement
+vertical. Surtout, la compensation positive n'exige pas que la vibration
+soit *purement* verticale : il suffit que la composante verticale de
+l'angle à la bouche corrèle, dans le bon sens, avec le temps de sortie
+$t_b$ (donc avec la vitesse initiale). Le mouvement horizontal ajoute du
+bruit sans détruire ce bénéfice, ce que confirme le succès empirique des
+tuners en benchrest .22 LR. Le modèle planaire est donc un modèle de
+*premier ordre* : utile et prédictif, mais qui sous-estime
+structurellement la dispersion réelle.
+
 # Bibliographie {#bibliographie .unnumbered}
 
 ::: {.thebibliography}
