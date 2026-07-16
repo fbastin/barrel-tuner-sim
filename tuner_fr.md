@@ -34,6 +34,16 @@ tube parfaitement rigide et immobile, la dispersion des vitesses des
 cartouches se traduirait inévitablement par une *traînée verticale* sur
 la cible : les balles rapides en haut, les lentes en bas.
 
+À titre d'ordre de grandeur, la chute vaut
+$h = \tfrac12\,g\,(D/\bar v)^2$ pour une distance $D$ et une vitesse
+initiale $\bar v$, si bien qu'un écart de vitesse $\Delta v$ décale
+l'impact de $|\Delta h| \approx g\,D^2\,\Delta v / \bar v^3$. Pour une
+.22 LR de match ($\bar v \approx 330$ m/s) tirée à $D = 50$ m, une
+dispersion de $30$ fps ($\Delta v \approx 9$ m/s) produit ainsi, par le
+seul temps de vol, une traînée verticale d'environ $6$ mm --- largement
+de quoi ruiner un groupement de match. C'est précisément cette
+dispersion que la compensation positive vise à annuler.
+
 ## Le canon vibre comme un diapason
 
 En réalité, lorsque le coup part, le canon ne reste pas immobile : il se
