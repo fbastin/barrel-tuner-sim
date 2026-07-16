@@ -610,6 +610,8 @@
 
 	\paragraph{8. Un réglage spécifique à la distance.} La vitesse angulaire optimale \eqref{eq:dthetaopt} est \emph{proportionnelle à la distance de tir} : $\dot\theta_\text{out}^\star = -\,gD/(v_0^3\,\tau_v) \propto D$. Un tuner accordé pour $D = 50$~m ne réalise donc l'égalité \eqref{eq:compensation} qu'à cette distance ; à une autre distance, le terme balistique (en $\partial h_\text{bal}/\partial v_0 \propto D^2$) et le terme angulaire (en $\dot\theta_\text{out}\,D$) ne s'annulent plus exactement et la compensation devient \emph{partielle} --- sous-compensation au-delà de la distance de réglage, sur-compensation en-deçà ---, la dispersion de vitesse réapparaissant graduellement en traînée verticale. Il faut en retenir que la compensation positive ne \emph{réduit pas} la dispersion de vitesse initiale du lot (l'écart-type des vitesses reste inchangé) : elle en \emph{masque} l'effet vertical, et seulement au voisinage de la distance de réglage. Un lot à faible écart-type de vitesse reste donc préférable, et un tuner gagne à être vérifié à la distance de la compétition. Le phénomène est néanmoins progressif : un réglage établi à courte distance conserve une part de son bénéfice à plus longue distance tant que le groupement intrinsèque reste inférieur à la traînée balistique qu'il corrige.
 
+	\paragraph{9. Un tuner n'est pas toujours bénéfique : l'étude MEF de Harral.} Une dernière mise en garde, empirique celle-là, vient d'une simulation par éléments finis indépendante conduite par A.\ Harral~\cite{Harral} sur une carabine benchrest .22~LR (l'arme d'« Esten »). En calculant, pour la plage de vitesses 1035--1075~fps, la traînée verticale sur cible avec et sans masse de bouche, Harral obtient un résultat contre-intuitif : le \emph{meilleur} groupement vertical est ici obtenu \emph{sans} tuner ($0{,}091$~pouce, soit $\approx 2{,}3$~mm), l'ajout d'une masse le \emph{dégradant} monotonement --- $0{,}122$~pouce ($\approx 3{,}1$~mm) avec 4,9~oz ($\approx 139$~g), $0{,}183$~pouce ($\approx 4{,}6$~mm) avec 16~oz ($\approx 454$~g). L'interprétation est cohérente avec notre formalisme : ce canon nu place déjà, par sa géométrie (profil \emph{reverse taper} flexible), la sortie de balle $t_b$ sur un flanc \emph{ascendant} favorable de $\theta(L,t)$ ; alourdir la bouche ralentit la cinématique \eqref{eq:dwdmt} et fait dériver $t_b$ vers un flanc \emph{descendant}, où la combinaison devient additive (dispersion \emph{aggravée}). On retiendra deux leçons pratiques : (i) le tuner ne \emph{crée} pas la compensation, il ne fait que \emph{déplacer} $t_b$ dans le cycle vibratoire --- si le canon est déjà bien placé, la meilleure position de tuner peut être « aucune masse », et son rôle se réduit à \emph{réaccorder} après un changement de lot ou de distance (point~3 et point~8) ; (ii) une masse \emph{légère}, à réglage plus fin, est préférable à une masse lourde qui risque de « survoler » l'optimum d'un cran à l'autre. Harral confirme par ailleurs, sur la même étude, le caractère spécifique à la distance (point~8), un réglage à 50~yd ne restant pas optimal à 100~yd.
+
 	\section*{Bibliographie}
 
 	\begin{thebibliography}{9}
@@ -643,6 +645,10 @@
 
 		\bibitem{Audette}
 		C. Audette, \textit{The Optimum Charge Weight (OCW) Method}, \textit{Precision Shooting Magazine}, 2005--2010.
+
+		\bibitem{Harral}
+		A. Harral, \textit{Al's 22LR --- Barrel Tuner Analysis} (étude par éléments finis d'un tuner de bouche sur carabine benchrest .22~LR, en ligne, consulté en juillet 2026),\\
+		\url{https://varmintal.com/a22lr.htm}.
 
 		\bibitem{Newmark}
 		N. M. Newmark, \textit{A Method of Computation for Structural Dynamics}, ASCE Journal of the Engineering Mechanics Division, 85(3), pp. 67--94, 1959.
