@@ -458,7 +458,7 @@ if PLOTS_AVAILABLE
     #     ATTENTION : sa colonne `proj` du tableau 1, elle, GARDE la flèche.
     p_proj = plot(xlabel="Temps (ms)", ylabel="Projection de bouche à 50 yd (in)",
                   title="Projection de bouche — flèche statique retirée",
-                  legend=:topright)
+                  legend=:bottomright)   # en haut à droite, elle couvrait les courbes
     palette = [:black, :darkorange, :seagreen, :crimson]
     for (i, (name, m)) in enumerate(configs)
         r = results[name].r_lo
