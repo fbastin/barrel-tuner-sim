@@ -70,6 +70,20 @@ const M_BARREL      = sum(begin
                           end for e in 1:N_elements)
 const M_STOCK       = M_RIFLE_TOTAL - M_BARREL   # boîte + crosse + avant-bras
 
+# -----------------------------------------------------------------------------
+# EXCITATION PHYSIQUE : le moment de recul est calé sur l'impulsion RÉELLE de
+# recul, J = (1+β_gaz)·m_p·v_muzzle, et non sur le p_max = 200 MPa de
+# `chamber_pressure` (un simple gabarit de forme, ~2,6× le recul réel). On
+# garde la FORME temporelle de chamber_pressure et on la rééchelonne pour que
+# ∫ A_bore·p dt = J. Ainsi l'amplitude devient une PRÉDICTION (via h_bore,
+# hauteur d'âme), plus un paramètre libre.
+# -----------------------------------------------------------------------------
+const β_GAZ = 0.3        # part des gaz dans l'impulsion de recul (~+30 %, rimfire)
+const PRESSURE_SHAPE_INT = let s = 0.0, dt = 1e-7, t = 0.0
+    while t < 6 * t_peak; s += chamber_pressure(t) * dt; t += dt; end
+    s                                    # ∫ chamber_pressure dt (à p_max), Pa·s
+end
+
 const N_STOCK = 16      # talon → culasse
 const N_BAR   = N_elements   # culasse → bouche (48)
 const N_FORE  = 8       # culasse → pointe d'avant-bras
@@ -273,9 +287,11 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
     C = rayleigh_damping(S.M, K_lin, ωa, ωb, ζ1, ζ2)
 
     d_breech_θ = 2 * S.T.i_breech
+    # Rééchelonnement physique : ∫ A_bore·(p·p_scale) dt = (1+β)·m_p·v_muzzle.
+    p_scale = (1 + β_GAZ) * m_p * v_muzzle / (A_bore * PRESSURE_SHAPE_INT)
     function F_of_t(t)
         F = copy(S.Fg)
-        F[d_breech_θ] += chamber_pressure(t) * A_bore * h_bore   # moment de tangage
+        F[d_breech_θ] += chamber_pressure(t) * p_scale * A_bore * h_bore   # moment de recul PHYSIQUE
         F .+= point_load_barrel(-m_p * g_ms, x_breech + xp(t), S.T, x_breech, S.nd)
         return F
     end
