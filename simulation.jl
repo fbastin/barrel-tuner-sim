@@ -47,7 +47,7 @@ const J_tuner_0 = 5.0e-4
 
 # Projectile et balistique interne (.22 LR Match, Eley Tenex)
 const m_p       = 2.6e-3        # 40 grains
-const v_muzzle  = 308.0         # 1010 ft/s
+const v_muzzle  = 318.0         # 1043 ft/s (Eley Tenex : cohérent avec le τ_v de Kolbe)
 const t_b_nom   = 2.5e-3        # Temps de parcours nominal
 
 # Excitation : pression de chambre (profil gamma)
@@ -477,9 +477,12 @@ println("="^72)
 println()
 
 # Étape A — Calibration automatique de h_offset
-# Kolbe rapporte ~9.4 MOA/ms en pic d'oscillation pour le canon nu et
-# ~6.0 MOA/ms à t_b pour le canon tuned. On cale le pic d'oscillation
-# (enveloppe vibratoire) à ~10 MOA/ms — proche de Kolbe.
+# Kolbe mesure le taux d'angle de bouche À L'INSTANT DE SORTIE : −9.4 MOA/ms
+# (bouche descendante) pour le canon nu, +6.0 MOA/ms pour le canon tuned.
+# Il ne publie AUCUN pic d'oscillation. La cible de 10 MOA/ms ci-dessous est
+# donc NOTRE choix d'échelle (amplitude plausible), pas un chiffre de Kolbe :
+# elle sert seulement à fixer h_offset, la seule grandeur validable étant le
+# taux À t_b (voir la colonne θ̇(t_b) du balayage, comparée à la cible 6.0).
 println("[A] Calibration automatique de h_offset")
 println("-"^72)
 target_peak = 10.0   # MOA/ms en pic absolu de la vibration
