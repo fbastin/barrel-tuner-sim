@@ -252,7 +252,7 @@ function point_load_barrel(Fval, x_global, T, x_breech, nd)
 end
 
 function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
-                     k_rest, h_bore, unilateral = true, ζ1 = 0.01, ζ2 = 0.06,
+                     k_rest, h_bore, unilateral = true, ζ1 = 0.005, ζ2 = 0.005,
                      Δt = 2e-6, t_end = 3.0e-3)
     S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest)
     xp = projectile_pos(v_muzzle)
@@ -261,8 +261,16 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
     stable || return nothing                 # l'arme bascule ⇒ config rejetée
 
     K_lin = K_with_mask(S.K, S.spring_dofs, k_rest, mask0)
-    _, ωs = modal_analysis(K_lin, S.M; n_modes = 3)
-    C = rayleigh_damping(S.M, K_lin, ωs[1], ωs[2], ζ1, ζ2)
+    # ⚠️ AMORTISSEMENT : caler Rayleigh sur les modes de WHIP du canon
+    # (flexion, > ~120 Hz), PAS sur les modes de corps rigide sur les sacs
+    # (~20-80 Hz). Caler sur ces derniers imposait ζ ≈ 0,8 au whip (267 Hz) et
+    # l'étouffait d'un facteur ~10 (bug corrigé le 2026-07-17). Les modes de
+    # sacs, lents (< 0,1 cycle sur la fenêtre t_b), sont négligeables ici.
+    fs, ωs = modal_analysis(K_lin, S.M; n_modes = 8)
+    whip = findall(f -> f > 120.0, fs)
+    ωa, ωb = length(whip) >= 2 ? (ωs[whip[1]], ωs[whip[2]]) : (ωs[end-1], ωs[end])
+    f_whip = length(whip) >= 1 ? fs[whip[1]] : fs[end]
+    C = rayleigh_damping(S.M, K_lin, ωa, ωb, ζ1, ζ2)
 
     d_breech_θ = 2 * S.T.i_breech
     function F_of_t(t)
@@ -279,7 +287,7 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
     t_b = exit_time(v_muzzle)
     ib  = argmin(abs.(ts .- t_b))
     return (θ_tb = U[dm+1, ib], ẏ_tb = V[dm, ib],
-            θ_stat = U_stat[dm+1], f1 = ωs[1]/(2π), f_lift = f_lift)
+            θ_stat = U_stat[dm+1], f1 = f_whip, f_lift = f_lift)
 end
 
 function spread_for(m_tuner; kw...)
@@ -379,7 +387,7 @@ function main_sweep()
         println("\nMEILLEURE configuration (Δ maximal, contact unilatéral) :")
         @printf("  culasse=%.0f in  avant-bras=%.0f in  EI=%.0e  h_âme=%.1f in  k_sac=%.0e\n",
                 best.xb*M2IN, best.lf*M2IN, best.eis, best.hb*M2IN, best.kr)
-        @printf("  proj statique = %+.3f in (Harral −1.32)   f₁=%.1f Hz   décollement %.0f %% du temps\n",
+        @printf("  proj statique = %+.3f in (Harral −1.32)   f_whip=%.0f Hz   décollement %.0f %% du temps\n",
                 best.proj, best.f1, 100*best.f_lift)
         @printf("  spread : %s\n", join([@sprintf("%.4f", s) for s in best.sp], "  "))
         @printf("  Harral : %s\n", join([@sprintf("%.4f", s) for s in HARRAL], "  "))
