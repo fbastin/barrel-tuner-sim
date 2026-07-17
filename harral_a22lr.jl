@@ -186,22 +186,36 @@ function modal_analysis(Ka, Ma; n_modes = 5)
 end
 
 # -----------------------------------------------------------------------------
-# 7. BALISTIQUE INTERNE : temps de sortie t_b propre à chaque vitesse
-#   Profil de vitesse v(t) = v_m·(1 − e^{−t/τ}), position intégrée ;
-#   t_b = instant où x = L. τ calé pour un temps de sortie réaliste (~2.3 ms).
+# 7. BALISTIQUE INTERNE : profil « burnout » — accélération constante sur une
+#   fraction φ du canon, puis coast à v_muzzle.
+#
+#   POURQUOI CE PROFIL. Le rôle de la balistique interne ici est de fixer le
+#   temps de sortie t_b ET sa sensibilité à la vitesse τ_v = −∂t_b/∂v₀, qui
+#   place la sortie dans le cycle vibratoire. Kolbe mesure τ_v = 8,8 µs/(m/s).
+#   L'ancien profil (lag exponentiel v = v_m(1−e^{−t/τ})) est « front-loaded » :
+#   toute l'accélération à la culasse, puis coast → τ_v plafonne à L/v² ≈ 6,5 µs,
+#   quel que soit τ. Il ne pouvait PAS atteindre 8,8.
+#
+#   Le profil burnout donne, analytiquement :
+#     t_b  = (1+φ)·L / v_muzzle
+#     τ_v  = (1+φ)·L / v_muzzle²            (entre L/v² à φ=0 et 2L/v² à φ=1)
+#   φ = 0,35 reproduit τ_v = 8,8 µs/(m/s) sur le canon 26" de Kolbe (v=318).
+#   Physiquement : la balle accélère sur le premier tiers du canon, puis coaste
+#   sous frottement — caricature raisonnable d'une .22 LR.
 # -----------------------------------------------------------------------------
-function exit_time(v_muzzle; τ = 0.40e-3)
-    x(t) = v_muzzle * (t - τ * (1 - exp(-t/τ)))
-    lo, hi = 1e-6, 10e-3
-    for _ in 1:200
-        mid = 0.5*(lo+hi)
-        x(mid) < L ? (lo = mid) : (hi = mid)
-    end
-    return 0.5*(lo+hi)
-end
+const PHI_BURN = 0.35        # fraction de canon en phase d'accélération
 
-function projectile_pos(v_muzzle; τ = 0.40e-3)
-    return t -> t > 0 ? v_muzzle * (t - τ * (1 - exp(-t/τ))) : 0.0
+exit_time(v_muzzle; φ = PHI_BURN) = (1 + φ) * L / v_muzzle
+
+function projectile_pos(v_muzzle; φ = PHI_BURN)
+    x_bo  = φ * L                       # position de fin d'accélération
+    a     = v_muzzle^2 / (2 * x_bo)     # accélération constante
+    t_acc = v_muzzle / a                # = 2φL/v_muzzle
+    return function (t)
+        t <= 0     && return 0.0
+        t < t_acc  && return 0.5 * a * t^2
+        return x_bo + v_muzzle * (t - t_acc)
+    end
 end
 
 # -----------------------------------------------------------------------------

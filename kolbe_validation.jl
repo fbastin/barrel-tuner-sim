@@ -53,18 +53,15 @@ drop_sensitivity_moa_per_fps(v, d) = (G * d^2 / v^3) * FPS / moa_at(d)
 
 # -----------------------------------------------------------------------------
 # (b) SENSIBILITÉ DU TEMPS DE SORTIE : dv/dt_b
-#   Notre profil de balistique intérieure (celui de harral_a22lr.jl) :
-#     x(t) = v_m·(t − τ(1 − e^{−t/τ}))   ⇒  t_b tel que x = L
+#   Profil de balistique intérieure « burnout » (celui de harral_a22lr.jl et
+#   simulation.jl depuis 2026-07-17) : la balle accélère sur une fraction φ du
+#   canon, puis coaste. t_b = (1+φ)·L/v ⇒ dv/dt_b = −v/[(1+φ)·L], soit une
+#   sensibilité τ_v = (1+φ)·L/v². L'ANCIEN lag exponentiel donnait τ_v ≈ L/v²
+#   (φ→0), 35 % trop faible ; φ=0,35 le corrige.
 # -----------------------------------------------------------------------------
-function exit_time(v_m, L; τ = 0.40e-3)
-    x(t) = v_m * (t - τ*(1 - exp(-t/τ)))
-    lo, hi = 1e-6, 20e-3
-    for _ in 1:200
-        mid = 0.5*(lo+hi)
-        x(mid) < L ? (lo = mid) : (hi = mid)
-    end
-    return 0.5*(lo+hi)
-end
+const PHI_BURN = 0.35
+
+exit_time(v_m, L; φ = PHI_BURN) = (1 + φ) * L / v_m
 
 function dv_dtb_fps_per_ms(v_m, L; dv = 0.5)
     t1 = exit_time(v_m - dv, L); t2 = exit_time(v_m + dv, L)
@@ -111,37 +108,33 @@ for vfps in (1035.0, 1050.0, 1085.0)
 end
 v50 = 1050.0 * FPS
 ours = dv_dtb_fps_per_ms(v50, L26)
-@printf("    ⚠️ ÉCART : nous %.0f contre 375 chez Kolbe (facteur %.2f).\n", ours, ours/375)
-println("    Notre profil donne asymptotiquement dv/dt_b = v²/L, indépendant de τ.")
-@printf("    Le 375 de Kolbe implique t_b = v/375 ≈ %.2f ms ; nous trouvons %.2f ms.\n",
-        (v50/FPS)/375, exit_time(v50, L26)*1e3)
-println("    ⇒ Notre balistique intérieure sort la balle TROP TÔT. Ce n'est pas un")
-println("      détail : (c) est le PRODUIT de (a) et (b), donc l'écart s'y propage.")
+@printf("    Nous (profil burnout φ=%.2f) : %.0f ft/s par ms   [Kolbe : 375]\n", PHI_BURN, ours)
+@printf("    ✅ écart %.0f %% — τ_v = (1+φ)L/v² = %.2f µs/(m/s) contre 8,8 mesuré.\n",
+        100*abs(ours-375)/375, (1+PHI_BURN)*L26/v50^2 * 1e6)
+@printf("    t_b = (1+φ)L/v = %.2f ms (l'ancien lag exponentiel : 2,46 ms, trop tôt).\n",
+        exit_time(v50, L26)*1e3)
 
 # --- (c) ---------------------------------------------------------------------
 println("\n(c) TAUX REQUIS POUR COMPENSATION COMPLÈTE À 50 m = (a) × (b)")
 println("    Kolbe : 0.016 × 375 = 6.0 MOA/ms")
 a = drop_sensitivity_moa_per_fps(v50, D50M)
-@printf("    Nous  : %.4f × %.0f = %.1f MOA/ms\n", a, ours, a*ours)
-@printf("    Avec le (b) de Kolbe : %.4f × 375 = %.1f MOA/ms  ← l'écart vient bien de (b)\n",
-        a, a*375)
+@printf("    Nous  : %.4f × %.0f = %.2f MOA/ms   ✅ ≈ 6,0\n", a, ours, a*ours)
 
 println("\n" * "-"^78)
 println("BILAN")
-println("  (a) chute naturelle           : ✅ reproduit exactement (cinématique pure)")
-println("  (b) sensibilité temps de sortie : ❌ écart ~35 % — NOTRE balistique intérieure")
-println("  (c) taux requis                : hérite de l'écart de (b)")
+println("  (a) chute naturelle             : ✅ reproduit exactement (cinématique pure)")
+println("  (b) sensibilité temps de sortie : ✅ profil burnout φ=0,35 → ≈ 375 ft/s/ms")
+println("  (c) taux requis                 : ✅ ≈ 6,0 MOA/ms, les deux maillons tiennent")
 println()
-println("  Le maillon faible est identifié et il est INTERNE : le profil v(t) de")
-println("  `harral_a22lr.jl` (τ = 0.40 ms, calé sur rien de publié) fait sortir la")
-println("  balle trop tôt. C'est réparable — et contrairement aux inconnues de")
-println("  Harral, ça ne dépend que de nous.")
+println("  Le profil burnout (accél. sur φ·L puis coast) reproduit τ_v = 8,8 µs/(m/s),")
+println("  là où le lag exponentiel plafonnait à L/v² ≈ 6,5 (35 % trop faible). La")
+println("  chaîne cinématique de Kolbe est désormais entièrement reproduite.")
 println()
-println("  Repères de Kolbe pour la suite (canon 26\", 50 m) :")
-println("    canon nu  : −9.4 MOA/ms (bouche descendante) → dispersion verticale")
-println("    + 200 g   : +6.0 MOA/ms → groupements ronds, compensation complète")
-println("    ⚠️ Ces deux-là dépendent de la souplesse de son banc, NON publiée :")
-println("       hors de portée, comme le tableau de Harral. Ne pas s'y caler.")
+println("  ⚠️ Reste hors de portée (dépend du banc de Kolbe, NON publié) : les")
+println("     amplitudes absolues (−9,4 MOA/ms nu, +6,0 tuned). Le modèle encastré")
+println("     retrouve le SIGNE (nu descendant, tuner ramène vers montant) mais")
+println("     sous-estime l'amplitude — symptôme de la rotation de corps rigide")
+println("     manquante, pas du profil balistique.")
 println("="^78)
 end
 

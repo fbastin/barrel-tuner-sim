@@ -48,7 +48,8 @@ const J_tuner_0 = 5.0e-4
 # Projectile et balistique interne (.22 LR Match, Eley Tenex)
 const m_p       = 2.6e-3        # 40 grains
 const v_muzzle  = 318.0         # 1043 ft/s (Eley Tenex : cohérent avec le τ_v de Kolbe)
-const t_b_nom   = 2.5e-3        # Temps de parcours nominal
+const PHI_BURN  = 0.35          # fraction de canon en phase d'accélération (profil burnout)
+# t_b n'est plus imposé : il découle du profil, t_b = (1+φ)·L/v_muzzle ≈ 2,80 ms.
 
 # Excitation : pression de chambre (profil gamma)
 const p_max     = 200e6         # Pic de pression (Pa)
@@ -148,25 +149,23 @@ function modal_analysis(Ka, Ma; n_modes = 5)
 end
 
 # -----------------------------------------------------------------------------
-# 6. BALISTIQUE INTERNE
+# 6. BALISTIQUE INTERNE : profil « burnout »
+#   La balle accélère (a constante) sur une fraction φ du canon, puis coaste à
+#   v_muzzle. Ce profil reproduit la sensibilité mesurée par Kolbe,
+#   τ_v = −∂t_b/∂v₀ = (1+φ)·L/v² = 8,8 µs/(m/s) à φ=0,35 (canon 26", v=318),
+#   là où l'ancien lag exponentiel plafonnait à L/v² ≈ 6,5 µs. Le temps de
+#   sortie t_b = (1+φ)·L/v_muzzle en découle (≈ 2,80 ms), il n'est plus imposé.
 # -----------------------------------------------------------------------------
-function projectile_kinematics(t_b, v_muzzle, L)
-    @assert t_b * v_muzzle > L "Profil inconsistant : t_b > L/v_muzzle requis"
-    f(τ) = v_muzzle * (t_b + τ * (exp(-t_b/τ) - 1)) - L
-    τ_lo, τ_hi = 1e-8, 10 * t_b
-    for _ in 1:120
-        τ_mid = 0.5 * (τ_lo + τ_hi)
-        if f(τ_mid) > 0
-            τ_lo = τ_mid
-        else
-            τ_hi = τ_mid
-        end
-    end
-    τ = 0.5 * (τ_lo + τ_hi)
+function projectile_kinematics(v_muzzle, L; φ = PHI_BURN)
+    x_bo  = φ * L                       # fin de la phase d'accélération
+    a     = v_muzzle^2 / (2 * x_bo)     # accélération constante
+    t_acc = v_muzzle / a                # = 2φL/v_muzzle
+    t_b   = (1 + φ) * L / v_muzzle
     return (
-        x = t -> t > 0 ? v_muzzle * (t + τ * (exp(-t/τ) - 1)) : 0.0,
-        v = t -> t > 0 ? v_muzzle * (1 - exp(-t/τ))            : 0.0,
-        τ = τ,
+        x = t -> t <= 0 ? 0.0 : (t < t_acc ? 0.5*a*t^2 : x_bo + v_muzzle*(t - t_acc)),
+        v = t -> t <= 0 ? 0.0 : (t < t_acc ? a*t       : v_muzzle),
+        t_b = t_b,
+        τ_v = (1 + φ) * L / v_muzzle^2,
     )
 end
 
@@ -252,7 +251,7 @@ end
 # -----------------------------------------------------------------------------
 # 10. SIMULATION D'UN TIR (h_offset paramétrable)
 # -----------------------------------------------------------------------------
-function simulate_shot(m_tuner; J_tuner = J_tuner_0, t_b = t_b_nom,
+function simulate_shot(m_tuner; J_tuner = J_tuner_0,
                        Δt = 5e-6, t_end = 30e-3,
                        ζ1 = 0.005, ζ2 = 0.01,
                        h_offset = h_offset_default,
@@ -260,7 +259,8 @@ function simulate_shot(m_tuner; J_tuner = J_tuner_0, t_b = t_b_nom,
     Ka, Ma  = build_system(m_tuner, J_tuner)
     freqs, ωs, Φ = modal_analysis(Ka, Ma; n_modes = 5)
     Ca, _, _ = rayleigh_damping(Ma, Ka, ωs[1], ωs[2], ζ1, ζ2)
-    kin     = projectile_kinematics(t_b, v_muzzle, L)
+    kin     = projectile_kinematics(v_muzzle, L)
+    t_b     = kin.t_b                    # découle du profil, plus imposé
     ndof_a  = size(Ka, 1)
     F_of_t  = t -> force_vector(t, kin.x, ndof_a, h_offset)
 
@@ -281,7 +281,7 @@ function simulate_shot(m_tuner; J_tuner = J_tuner_0, t_b = t_b_nom,
         print("Fréquences propres (Hz) : ")
         for f in freqs; @printf("%8.2f  ", f); end
         println()
-        @printf("τ_balistique = %.3f ms\n", kin.τ * 1e3)
+        @printf("τ_v (sensibilité) = %.2f µs/(m/s)   [Kolbe : 8,8]\n", kin.τ_v * 1e6)
         @printf("À t = t_b = %.3f ms :\n", ts[idx_b] * 1e3)
         @printf("    y(L)  = %+.3e m\n",      y_L[idx_b])
         @printf("    θ(L)  = %+.3e rad\n",    θ_at_tb)
