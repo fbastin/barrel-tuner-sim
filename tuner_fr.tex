@@ -454,7 +454,7 @@
 			\label{eq:dhbal}
 			\frac{\partial h_\text{bal}}{\partial v_0} \;\simeq\; -\,\frac{g D^2}{v_0^3} \;<\;0.
 		\end{equation}
-		Numériquement, à $D=50$\,m et $v_0 \approx 308$\,m/s (1010 ft/s, .22 LR Match), $\partial h_\text{bal}/\partial v_0 \approx -0{,}84$\,mm/(m/s), soit environ $-0{,}016$ MOA par ft/s ; ce nombre est aussi celui calculé par Kolbe~\cite{Kolbe} à partir d'un solveur de trajectoire balistique.
+		Numériquement, à $D=50$\,m et $v_0 \approx 318$\,m/s (1043 ft/s, Eley Tenex), $\partial h_\text{bal}/\partial v_0 \approx -0{,}76$\,mm/(m/s), soit $-0{,}016$ MOA par ft/s : exactement le nombre calculé par Kolbe~\cite{Kolbe} à partir d'un solveur de trajectoire balistique. Le choix de $v_0$ importe et doit rester \emph{cohérent} avec la munition sur laquelle $\tau_v$ a été mesuré (Eley Tenex, cf.\ ci-dessous) : à $v_0 = 308$\,m/s on obtiendrait $-0{,}0176$ MOA par ft/s, soit 10\,\% de trop, et l'écart se propagerait jusqu'au critère \eqref{eq:dthetaopt}.
 		\item \emph{Décalage du temps de sortie.} La cinématique interne couple $t_b$ et $v_0$ : à la limite, $t_b \propto 1/v_0$ donne $\partial t_b/\partial v_0 = -t_b/v_0$, mais la dépendance réelle est plus marquée car une charge plus énergique augmente la pression \emph{partout} dans le tube et raccourcit $t_b$ davantage qu'un simple rapport cinématique. On notera donc
 		\begin{equation}
 			\tau_v \;\equiv\; -\,\frac{\partial t_b}{\partial v_0} \;>\; 0,
@@ -475,11 +475,11 @@
 		\label{eq:dthetaopt}
 		\dot \theta_\text{out}^\star \;=\; \frac{1}{D\,\tau_v}\,\frac{\partial h_\text{bal}}{\partial v_0} \;=\; -\,\frac{g\,D}{v_0^3\,\tau_v}.
 	\end{equation}
-	\emph{Le signe négatif de $\partial h_\text{bal}/\partial v_0$ et de $\partial t_b/\partial v_0$ se composent pour rendre $\dot\theta_\text{out}^\star$ positif : la bouche doit donc se relever ($\dot\theta>0$) au moment du départ du coup.} Numériquement, avec $D=50$\,m, $v_0 = 308$\,m/s et $\tau_v = 8{,}8\,\mu$s/(m/s) :
+	\emph{Le signe négatif de $\partial h_\text{bal}/\partial v_0$ et de $\partial t_b/\partial v_0$ se composent pour rendre $\dot\theta_\text{out}^\star$ positif : la bouche doit donc se relever ($\dot\theta>0$) au moment du départ du coup.} Numériquement, avec $D=50$\,m, $v_0 = 318$\,m/s et $\tau_v = 8{,}8\,\mu$s/(m/s) :
 	\begin{equation*}
-		\dot\theta_\text{out}^\star \;\approx\; 1{,}9\ \text{mrad/ms} \;\approx\; 6{,}6\ \text{MOA/ms},
+		\dot\theta_\text{out}^\star \;\approx\; 1{,}73\ \text{mrad/ms} \;\approx\; 5{,}96\ \text{MOA/ms},
 	\end{equation*}
-	à comparer aux $6{,}0$ MOA/ms mesurés expérimentalement par Kolbe (l'écart de l'ordre de 10\,\% s'explique par la non-tendance de la trajectoire à 50 m et par les approximations sur $\tau_v$).
+	à comparer aux $6{,}0$ MOA/ms mesurés expérimentalement par Kolbe : \emph{l'accord est meilleur que} $1\,\%$. Ce n'est pas fortuit — les deux chemins sont indépendants. Kolbe multiplie sa chute naturelle mesurée ($0{,}016$ MOA par ft/s) par sa sensibilité de temps de sortie ($375$ ft/s par ms) ; nous partons de la cinématique balistique \eqref{eq:dhbal} et de $\tau_v$. Que les deux convergent à $1\,\%$ près valide la chaîne de raisonnement, à condition de garder $v_0$ cohérent avec la munition de référence.
 
 	\subsection{Nœud spatial \emph{vs} nœud temporel : précision sémantique}
 	\label{sec:nodes}

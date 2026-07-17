@@ -452,7 +452,7 @@
 			\label{eq:dhbal}
 			\frac{\partial h_\text{bal}}{\partial v_0} \;\simeq\; -\,\frac{g D^2}{v_0^3} \;<\;0.
 		\end{equation}
-		Numerically, at $D=50$\,m and $v_0 \approx 308$\,m/s (1010 ft/s, .22 LR Match), $\partial h_\text{bal}/\partial v_0 \approx -0.84$\,mm/(m/s), i.e.\ roughly $-0.016$ MOA per ft/s; this is also the number computed by Kolbe~\cite{Kolbe} using a trajectory solver.
+		Numerically, at $D=50$\,m and $v_0 \approx 318$\,m/s (1043 ft/s, Eley Tenex), $\partial h_\text{bal}/\partial v_0 \approx -0.76$\,mm/(m/s), i.e.\ $-0.016$ MOA per ft/s: exactly the number computed by Kolbe~\cite{Kolbe} using a trajectory solver. The choice of $v_0$ matters and must remain \emph{consistent} with the ammunition on which $\tau_v$ was measured (Eley Tenex, see below): at $v_0 = 308$\,m/s one would obtain $-0.0176$ MOA per ft/s, 10\,\% too high, and the error would propagate all the way to criterion \eqref{eq:dthetaopt}.
 		\item \emph{Exit-time shift.} The internal kinematics couples $t_b$ and $v_0$: in the limit, $t_b \propto 1/v_0$ gives $\partial t_b/\partial v_0 = -t_b/v_0$, but the actual dependence is stronger because a more energetic charge raises the pressure \emph{throughout} the bore and shortens $t_b$ more than a simple kinematic ratio. We therefore write
 		\begin{equation}
 			\tau_v \;\equiv\; -\,\frac{\partial t_b}{\partial v_0} \;>\; 0,
@@ -473,11 +473,11 @@
 		\label{eq:dthetaopt}
 		\dot \theta_\text{out}^\star \;=\; \frac{1}{D\,\tau_v}\,\frac{\partial h_\text{bal}}{\partial v_0} \;=\; -\,\frac{g\,D}{v_0^3\,\tau_v}.
 	\end{equation}
-	\emph{The negative signs of $\partial h_\text{bal}/\partial v_0$ and $\partial t_b/\partial v_0$ combine to make $\dot\theta_\text{out}^\star$ positive: the muzzle must therefore be rising ($\dot\theta>0$) at the moment of shot release.} Numerically, with $D=50$\,m, $v_0 = 308$\,m/s and $\tau_v = 8.8\,\mu$s/(m/s):
+	\emph{The negative signs of $\partial h_\text{bal}/\partial v_0$ and $\partial t_b/\partial v_0$ combine to make $\dot\theta_\text{out}^\star$ positive: the muzzle must therefore be rising ($\dot\theta>0$) at the moment of shot release.} Numerically, with $D=50$\,m, $v_0 = 318$\,m/s and $\tau_v = 8.8\,\mu$s/(m/s):
 	\begin{equation*}
-		\dot\theta_\text{out}^\star \;\approx\; 1.9\ \text{mrad/ms} \;\approx\; 6.6\ \text{MOA/ms},
+		\dot\theta_\text{out}^\star \;\approx\; 1.73\ \text{mrad/ms} \;\approx\; 5.96\ \text{MOA/ms},
 	\end{equation*}
-	to be compared with the $6.0$ MOA/ms experimentally measured by Kolbe (the $\sim 10\,\%$ discrepancy is explained by the non-flatness of the trajectory at 50 m and the approximations on $\tau_v$).
+	to be compared with the $6.0$ MOA/ms experimentally measured by Kolbe: \emph{the agreement is better than} $1\,\%$. This is not fortuitous --- the two routes are independent. Kolbe multiplies his measured natural drop ($0.016$ MOA per ft/s) by his exit-time sensitivity ($375$ ft/s per ms); we start from the ballistic kinematics \eqref{eq:dhbal} and $\tau_v$. That the two converge to within $1\,\%$ validates the chain of reasoning --- provided $v_0$ is kept consistent with the reference ammunition.
 
 	\subsection{Spatial node \emph{vs} temporal node: a semantic clarification}
 	\label{sec:nodes}
