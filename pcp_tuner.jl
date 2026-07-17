@@ -47,6 +47,13 @@
 using LinearAlgebra
 using Printf
 
+const PLOTS_AVAILABLE = try
+    using Plots; true
+catch
+    println("→ Plots.jl absent : la figure de la courbe d'accord sera ignorée.")
+    false
+end
+
 # -----------------------------------------------------------------------------
 # CONFIGURATION — bloc « munition + canon » (facile à changer)
 # -----------------------------------------------------------------------------
@@ -274,6 +281,27 @@ function main()
     println("Rappel : la POSITION des sweet spots ne dépend PAS de l'amplitude d'excitation")
     println("(linéarité) — on prédit le « où » sans la mesurer ; seule la PROFONDEUR du")
     println("gain en dépend.")
+
+    # ------------------------------------------------------------------
+    # Figure de la courbe d'accord (masse fixée → position du sweet spot)
+    # ------------------------------------------------------------------
+    if PLOTS_AVAILABLE
+        dsf = 0.0:0.0005:0.140
+        xs = Float64[]; ys = Float64[]
+        for mg in 35.0:2.5:110.0
+            θ = [theta_dot_tb(mg*1e-3; d_overhang = d)[1] for d in dsf]
+            ss = sweet_spots(collect(dsf), θ)
+            # branche d'accord principale : 1er sweet spot d'overhang > 15 mm
+            main = filter(s -> s*1e3 > 15, ss)
+            isempty(main) || (push!(xs, mg); push!(ys, main[1]*1e3))
+        end
+        plt = plot(xs, ys; marker = :circle, ms = 4, lw = 2, color = :seagreen,
+                   legend = false, xlabel = "Masse du tuner (g)",
+                   ylabel = "Porte-à-faux du sweet spot (mm)",
+                   title = "Courbe d'accord — tuner PCP .22")
+        savefig(plt, "plot_pcp_courbe_accord.png")
+        println("\n→ Figure enregistrée : plot_pcp_courbe_accord.png")
+    end
     println("="^74)
 end
 
