@@ -970,6 +970,47 @@ cran à l'autre. Harral confirme par ailleurs, sur la même étude, le
 caractère spécifique à la distance (point 8), un réglage à 50 yd ne
 restant pas optimal à 100 yd.
 
+*Réserve sur cette mise en garde.* Tout ce qui précède repose sur une
+source *unique et purement numérique*. Kolbe `\cite{KolbeSim}`{=latex}
+--- qui, lui, a mesuré --- juge ce travail non confirmé :  His work has
+lacked the experimental confirmation needed to verify his computer
+modelling, however.  Harral ne publie ni les données de son arme (un
+seul chiffre : 10,5 lb), ni ses fréquences propres, ni son
+amortissement. Le résultat reste plausible et cohérent avec le
+formalisme, mais doit être lu comme une *prédiction de simulation non
+validée*, non comme un fait mesuré.
+
+#### 10. À l'étau ou à l'épaule ? La condition d'appui *est* le mécanisme.
+
+La question la plus fréquente en pratique --- faut-il accorder l'arme
+serrée dans un étau, pour « éliminer le facteur humain » ? --- appelle
+une réponse tranchée : *non*, et pas pour une raison de réalisme, mais
+parce qu'un étau rigide *supprime le phénomène même que l'on cherche à
+régler*. Le moment excitateur
+[\[eq:moment_recul\]](#eq:moment_recul){reference-type="eqref"
+reference="eq:moment_recul"} n'existe que parce que l'arme *recule et
+pivote autour de son centre de gravité*
+(section [3.4](#sec:excitation){reference-type="ref"
+reference="sec:excitation"}) ; bloquer rigidement la base annule ce
+terme, et il ne subsiste que la flexion élastique du tube, qui ne
+produit *aucune* compensation. Le banc de Kolbe lui-même était un étau
+--- mais il précise qu'il n'était pas rigide :  The relatively thin base
+plate flexed under recoil and allowed the barrel clamp to rotate
+backwards, resulting in an upwards vertical muzzle flip.  Un serrage
+réellement rigide n'aurait rien montré. Pour le *benchrest*, la question
+est close : le tir au sac est, selon Kolbe,  a fair approximation  du
+recul libre postulé par le modèle. Pour le *tir épaulé ou couché*, en
+revanche, épauler ajoute de la masse effective et contraint la rotation
+: puisque l'amplitude varie comme $h_\text{cg}/m_r$
+[\[eq:hoffset_phys\]](#eq:hoffset_phys){reference-type="eqref"
+reference="eq:hoffset_phys"}, un accord établi en recul libre n'a aucune
+raison d'être optimal épaulé. Kolbe reste prudent ( if a small calibre
+rifle is gripped tightly or pulled hard into the shoulder then the
+recoil dynamics could be affected ) et ne l'a pas mesuré. En l'état des
+connaissances, la règle de prudence est donc : *accorder dans la
+position de tir*, et re-vérifier l'accord si l'on change de position ou
+de tenue.
+
 # Bibliographie {#bibliographie .unnumbered}
 
 ::: thebibliography
