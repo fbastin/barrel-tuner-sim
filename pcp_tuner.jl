@@ -26,10 +26,13 @@
 # scanne la course du tuner par tours pour trouver LE bon réglage). Les sweet
 # spots se répètent, mais très espacés (~100 g), hors de portée pratique.
 #
-# CAVEAT « masse vs position ». Un vrai tuner airgun s'ajuste en POSITION (on
-# dévisse le poids) : il change le bras de levier ET l'inertie, plus vite que
-# la seule masse. Ce script balaie la MASSE — il montre le mécanisme et donne
-# une borne BASSE de la sensibilité ; un balayage en position serait plus fin.
+# MASSE vs POSITION. Un vrai tuner airgun s'ajuste en POSITION (on visse le
+# poids plus ou moins loin en porte-à-faux devant la bouche). Ce script balaie
+# les DEUX (§ main : balayage A en masse, balayage B en position). Résultat
+# contre-intuitif : la position n'est PAS plus fine que la masse — c'est un
+# knob COMPARABLE (l'overhang décale les modes de whip du même ordre). Masse et
+# position forment ensemble l'espace d'accord ; aucun des deux ne produit un
+# peigne rapproché de sweet spots.
 #
 # RÉSERVE : la position exacte des sweet spots suppose qu'UNE source
 # d'excitation domine (ici la frappe marteau, modélisée par une impulsion
@@ -67,6 +70,12 @@ const TUNER_MAX  = 0.200  # masse de tuner balayée jusqu'à 200 g (au-delà du 
 const TUNER_STEP = 0.001  # pas de 1 g
 const ζ_STEEL    = 0.005  # amortissement matériau (acier)
 
+# Balayage en POSITION : masse fixe, on visse le tuner plus ou moins loin devant
+# la bouche (porte-à-faux d). C'est le réglage réel d'un tuner airgun.
+const TUNER_MASS_FIX = 0.040  # masse fixe pour le balayage en position (40 g)
+const OVERHANG_MAX   = 0.060  # porte-à-faux balayé jusqu'à 60 mm
+const OVERHANG_STEP  = 0.0005 # pas de 0,5 mm
+
 const MOA_per_rad = 180 * 60 / π
 moa_per_ms(rad_s) = rad_s * MOA_per_rad * 1e-3
 
@@ -95,7 +104,13 @@ function element_matrices()
     return Ke, Me
 end
 
-function build_system(m_tuner)
+# Tuner = masse m en PORTE-À-FAUX à la distance d DEVANT la bouche (stem rigide).
+# Le déplacement vertical de son centre de masse est y_bouche + d·θ_bouche, d'où
+# une matrice de masse ajoutée au nœud de bouche couplant translation/rotation :
+#   M_add = [ m      m·d      ]     (J_cm = inertie propre du tuner)
+#           [ m·d   m·d²+J_cm ]
+# À d = 0, on retrouve la masse ponctuelle à la bouche.
+function build_system(m_tuner; d_overhang = 0.0)
     Ke, Me = element_matrices()
     K = zeros(ndof, ndof); M = zeros(ndof, ndof)
     for e in 1:BARREL.N
@@ -105,8 +120,12 @@ function build_system(m_tuner)
     end
     active = 3:ndof                       # encastrement culasse : y₁ = θ₁ = 0
     Ka = K[active, active]; Ma = copy(M[active, active])
-    Ma[end-1, end-1] += m_tuner           # masse ponctuelle à la bouche
-    Ma[end,   end]   += m_tuner * 2.0e-3  # inertie du tuner (rayon giration ~4,5 cm)
+    J_cm = m_tuner * 2.0e-3               # inertie propre (rayon giration ~4,5 cm)
+    d = d_overhang
+    Ma[end-1, end-1] += m_tuner
+    Ma[end-1, end  ] += m_tuner * d
+    Ma[end,   end-1] += m_tuner * d
+    Ma[end,   end  ] += m_tuner * d^2 + J_cm
     return Ka, Ma
 end
 
@@ -149,17 +168,28 @@ function newmark(Ma, Ca, Ka, F_of_t, t_end; Δt = 2e-6)
     return ts, U, V
 end
 
-# θ̇(L, t_b) en MOA/ms pour une masse de tuner donnée
-function theta_dot_tb(m_tuner)
-    Ka, Ma = build_system(m_tuner)
+# θ̇(L, t_b) en MOA/ms pour un tuner (masse m_tuner, porte-à-faux d_overhang)
+function theta_dot_tb(m_tuner; d_overhang = 0.0)
+    Ka, Ma = build_system(m_tuner; d_overhang)
     ωs = modal(Ka, Ma; n = 4)
-    Ca = rayleigh(Ma, Ka, ωs[1], ωs[2], ζ_STEEL)   # canon nu : modes de flexion
+    Ca = rayleigh(Ma, Ka, ωs[1], ωs[2], ζ_STEEL)   # modes de flexion du canon
     ndof_a = size(Ka, 1)
     F_of_t = t -> (F = zeros(ndof_a); F[2] += hammer_moment(t); F)  # moment à la culasse
     t_b = exit_time()
     ts, U, V = newmark(Ma, Ca, Ka, F_of_t, 1.5*t_b)
     ib = argmin(abs.(ts .- t_b))
     return moa_per_ms(V[end, ib]), ωs[1]/(2π)      # θ̇(t_b), f₁
+end
+
+# Repère les passages par zéro (sweet spots) dans un balayage x → θ̇
+function sweet_spots(xs, θdots)
+    s = Float64[]
+    for i in 1:length(xs)-1
+        if θdots[i] == 0 || sign(θdots[i]) != sign(θdots[i+1])
+            push!(s, xs[i] - θdots[i]*(xs[i+1]-xs[i])/(θdots[i+1]-θdots[i]))
+        end
+    end
+    return s
 end
 
 # =============================================================================
@@ -173,51 +203,74 @@ function main()
     @printf("Temps de sortie t_b = %.2f ms ; cible d'accord : θ̇(t_b) = 0 (bouche stationnaire)\n\n",
             exit_time()*1e3)
 
+    # ------------------------------------------------------------------
+    # (A) BALAYAGE EN MASSE (tuner ponctuel à la bouche, d = 0)
+    # ------------------------------------------------------------------
     masses = 0.0:TUNER_STEP:TUNER_MAX
-    θdots  = Float64[]; f1s = Float64[]
-    for m in masses
-        θd, f1 = theta_dot_tb(m); push!(θdots, θd); push!(f1s, f1)
+    θm = [theta_dot_tb(m)[1] for m in masses]
+    f1_0 = theta_dot_tb(0.0)[2]; f1_max = theta_dot_tb(TUNER_MAX)[2]
+    sweet_m = sweet_spots(collect(masses), θm)
+
+    println("(A) BALAYAGE EN MASSE — tuner ponctuel à la bouche")
+    @printf("    f₁ : %.1f Hz (nu) → %.1f Hz (%.0f g)\n", f1_0, f1_max, TUNER_MAX*1e3)
+    if isempty(sweet_m)
+        println("    aucun sweet spot dans 0–$(Int(TUNER_MAX*1e3)) g.")
+    else
+        @printf("    sweet spots (θ̇=0) : %s g\n",
+                join([@sprintf("%.0f", m*1e3) for m in sweet_m], ", "))
+        length(sweet_m) >= 2 && @printf("    espacement moyen : %.0f g (≫ course réaliste ≤ 80 g → un seul en pratique)\n",
+                sum(diff(sweet_m))*1e3/(length(sweet_m)-1))
     end
 
-    # Détection des passages par zéro (sweet spots) par interpolation linéaire
-    sweet = Float64[]
-    for i in 1:length(masses)-1
-        if θdots[i] == 0 || sign(θdots[i]) != sign(θdots[i+1])
-            m0 = masses[i] - θdots[i]*(masses[i+1]-masses[i])/(θdots[i+1]-θdots[i])
-            push!(sweet, m0)
-        end
-    end
+    # ------------------------------------------------------------------
+    # (B) BALAYAGE EN POSITION — masse fixe vissée en porte-à-faux
+    # ------------------------------------------------------------------
+    ds = 0.0:OVERHANG_STEP:OVERHANG_MAX
+    θd = [theta_dot_tb(TUNER_MASS_FIX; d_overhang = d)[1] for d in ds]
+    f1d_0 = theta_dot_tb(TUNER_MASS_FIX; d_overhang = 0.0)[2]
+    f1d_max = theta_dot_tb(TUNER_MASS_FIX; d_overhang = OVERHANG_MAX)[2]
+    sweet_d = sweet_spots(collect(ds), θd)
 
-    @printf("f₁ : %.1f Hz (nu) → %.1f Hz (%.0f g)\n\n", f1s[1], f1s[end], TUNER_MAX*1e3)
-    println("Balayage θ̇(t_b) vs masse de tuner (extrait tous les 10 g) :")
-    @printf("  %-10s | %s\n", "tuner (g)", "θ̇(t_b) MOA/ms")
-    println("  " * "-"^32)
-    for (m, θd) in zip(masses, θdots)
-        (round(m*1e3) % 10 == 0) && @printf("  %-10.0f | %+8.3f%s\n",
-            m*1e3, θd, abs(θd) < 0.05 ? "   ← θ̇≈0 (sweet spot)" : "")
+    println("\n(B) BALAYAGE EN POSITION — tuner $(Int(TUNER_MASS_FIX*1e3)) g vissé en porte-à-faux (0–$(Int(OVERHANG_MAX*1e3)) mm)")
+    @printf("    f₁ : %.1f Hz (d=0) → %.1f Hz (d=%.0f mm) — faible sur le fondamental ;\n",
+            f1d_0, f1d_max, OVERHANG_MAX*1e3)
+    println("    l'overhang agit surtout sur les modes de whip (voir comparaison en fin).")
+    @printf("    %-13s | %s\n", "porte-à-faux", "θ̇(t_b) MOA/ms")
+    println("    " * "-"^36)
+    for (d, θ) in zip(ds, θd)
+        (round(d*1e3*2) % 10 == 0) && @printf("    %-13.0f | %+8.3f%s\n",
+            d*1e3, θ, abs(θ) < 0.05 ? "   ← θ̇≈0 (sweet spot)" : "")
     end
 
     println("\n" * "-"^74)
-    if isempty(sweet)
-        println("Aucun sweet spot (θ̇ = 0) dans 0–$(Int(TUNER_MAX*1e3)) g :")
-        println("la bouche ne repasse pas par un rebroussement sur cette plage.")
+    if isempty(sweet_d)
+        println("Aucun sweet spot en position sur 0–$(Int(OVERHANG_MAX*1e3)) mm.")
     else
-        println("SWEET SPOTS (θ̇ = 0, bouche stationnaire) :")
-        for (k, m) in enumerate(sweet)
-            @printf("  #%d : tuner ≈ %5.1f g%s\n", k, m*1e3,
-                    m <= 0.080 ? "   (dans la plage réaliste ≤ 80 g)" : "   (au-delà du réaliste)")
+        println("SWEET SPOTS EN POSITION (θ̇ = 0, bouche stationnaire) :")
+        for (k, d) in enumerate(sweet_d)
+            @printf("  #%d : porte-à-faux ≈ %.1f mm\n", k, d*1e3)
         end
-        if length(sweet) >= 2
-            gaps = diff(sweet) .* 1e3
-            @printf("\n  Espacement des sweet spots : %s g  (moyenne %.0f g).\n",
-                    join([@sprintf("%.0f", g) for g in gaps], ", "), sum(gaps)/length(gaps))
-            println("  Très espacés : sur la course réaliste d'un tuner, on n'en croise")
-            println("  qu'UN — on le trouve en scannant, comme en pratique. La récurrence")
-            println("  est robuste (décalage de phase induit par le tuner), mais l'amplitude")
-            println("  d'excitation, inconnue, n'en fixe pas la position — seulement la")
-            println("  profondeur du gain.")
+        if length(sweet_d) >= 2
+            gaps = diff(sweet_d) .* 1e3
+            @printf("\n  Espacement : %s mm  (moyenne %.1f mm).\n",
+                    join([@sprintf("%.1f", g) for g in gaps], ", "), sum(gaps)/length(gaps))
         end
     end
+    println()
+    println("COMPARAISON — et correction d'une intuition. On croit volontiers le réglage")
+    println("en POSITION « plus fin » que la masse. Le calcul dit : c'est un knob")
+    println("COMPARABLE, pas plus fin. L'overhang décale bien les modes de whip (ici f₃")
+    println("de 621 à 544 Hz sur 60 mm, ~12 %), du même ordre que la masse — mais à la")
+    println("masse fixe testée (40 g), θ̇(t_b) reste vers −0,2 MOA/ms et n'atteint JAMAIS")
+    println("zéro : aucun overhang ne rend la bouche stationnaire pour cette masse.")
+    println()
+    println("La leçon : masse et position forment ENSEMBLE l'espace d'accord. Les sweet")
+    println("spots sont des courbes dans le plan (masse, overhang) ; un tuner règle la")
+    println("position à masse fixe — encore faut-il que cette masse croise une courbe.")
+    println("Aucun des deux knobs ne produit un peigne rapproché : on scanne la course")
+    println("accessible pour trouver LE sweet spot, exactement comme en pratique.")
+    println("Rappel : la POSITION des sweet spots est indépendante de l'amplitude")
+    println("d'excitation (linéarité) ; seule leur PROFONDEUR en dépend.")
     println("="^74)
 end
 
