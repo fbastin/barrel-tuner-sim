@@ -52,8 +52,13 @@ tuner_fr.md: tuner_fr.tex
 	$(PANDOC) $< -o $@
 
 # Copie des PDF et du script vers le dossier servi par le site.
+# Tolérant : ignoré si WEBDIR n'existe pas (cas du dépôt autonome public).
 publish: $(PDFS) $(SCRIPT)
-	cp $(PDFS) $(SCRIPT) $(WEBDIR)/
+	@if [ -d $(WEBDIR) ]; then \
+		cp $(PDFS) $(SCRIPT) $(WEBDIR)/ && echo "Publié vers $(WEBDIR)"; \
+	else \
+		echo "WEBDIR ($(WEBDIR)) absent — publication ignorée (dépôt autonome)"; \
+	fi
 
 clean:
 	$(RM) $(AUX)
