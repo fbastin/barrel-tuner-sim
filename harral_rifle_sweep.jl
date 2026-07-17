@@ -302,7 +302,10 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
     dm  = 2 * S.T.i_muzzle - 1
     t_b = exit_time(v_muzzle)
     ib  = argmin(abs.(ts .- t_b))
+    const_MOAms = (180*60/π) * 1e-3        # rad/s → MOA/ms
     return (θ_tb = U[dm+1, ib], ẏ_tb = V[dm, ib],
+            θdot_tb   = V[dm+1, ib] * const_MOAms,          # taux angulaire à t_b, MOA/ms
+            θdot_peak = maximum(abs.(V[dm+1, :])) * const_MOAms,
             θ_stat = U_stat[dm+1], f1 = f_whip, f_lift = f_lift)
 end
 
