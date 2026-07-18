@@ -19,6 +19,7 @@ de son centre de gravité** et imprime un moment à la culasse.
 | `harral_rifle_sweep.jl` | Modèle du **fusil entier libre** sur deux sacs (canon + boîte + crosse + avant-bras), appuis unilatéraux, balayage géométrique. |
 | `kolbe_validation.jl` | Validation de la chaîne cinématique de Kolbe (chute naturelle, sensibilité du temps de sortie, taux d'accord de 6,0 MOA/ms à 50 m). |
 | `kolbe_amplitude.jl` | Amplitude du taux angulaire de bouche : le fusil libre atteint-il l'ordre de grandeur mesuré par Kolbe ? |
+| `variability.jl` | Dispersion prédite quand l'excitation ne se répète pas d'un coup à l'autre (±30 % mesurés par Vaughn) : Monte-Carlo sur vitesse **et** amplitude, plancher non compensable, critère d'accord révisé. |
 | `tuner_fr.tex` / `tuner_en.tex` | Document explicatif (physique, résultats, bibliographie) — versions française et anglaise. |
 | `v1.tex`, `v2.tex`, `fig1.tex`, `code.jl.txt` | Versions antérieures, conservées pour l'historique. |
 | `Makefile` | Génère les PDF (pdflatex, 2 passes) et le `.md` dérivé (pandoc). |
@@ -30,6 +31,7 @@ julia simulation.jl        # figures plot_*.png + tir nominal + balayage
 julia harral_a22lr.jl      # table de dispersion façon Harral (culasse encastrée)
 julia kolbe_validation.jl  # chaîne cinématique de Kolbe
 julia kolbe_amplitude.jl   # amplitude du taux angulaire (fusil libre)
+julia variability.jl     # dispersion prédite avec excitation variable (Monte-Carlo)
 julia harral_rifle_sweep.jl  # balayage du fusil libre (long)
 ```
 

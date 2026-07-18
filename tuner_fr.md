@@ -970,6 +970,37 @@ d'ensemble ne correspondent pas à la masse mobile, non publiée. Les deux
 courbes de la figure [7](#fig:balayage_position){reference-type="ref"
 reference="fig:balayage_position"} encadrent ces deux régimes.
 
+#### Viser le nœud, non le chiffre.
+
+La section [5](#sec:cinematique){reference-type="ref"
+reference="sec:cinematique"} énonce la condition de compensation sous
+deux formes équivalentes : un taux angulaire de $6$ MOA/ms, mais aussi
+et surtout une *sortie au voisinage d'un nœud temporel ascendant*, là où
+$\theta = 0$ et où $\dot\theta$ est maximal. Les deux formes coïncident
+par quadrature. Régler sur le *chiffre* n'y conduit pourtant pas
+toujours, et le balayage ci-dessus en fournit un contre-exemple. Tant
+que l'excitation était supposée identique à chaque coup, l'écart restait
+sans conséquence visible ; dès lors qu'elle varie (point 12), il se
+paie, la sensibilité à cette variabilité étant proportionnelle à l'angle
+*absolu* $\theta(t_b)$. À 200 g, le modèle plafonne à $5{,}91$ MOA/ms et
+n'atteint jamais $6{,}0$ :  au plus proche de la cible  retombe donc sur
+le maximum, c'est-à-dire sur le nœud, et le réglage de $65$ mm est déjà
+le bon. À 100 g au contraire, $\dot\theta$ franchit $6{,}0$ dès $80$ mm
+puis continue de monter jusqu'à $6{,}18$ : viser la valeur nominale
+s'arrête *avant* le maximum, à $131$ $\mu$rad du neutre au lieu de $16$.
+Le simulateur de variabilité (`variability.jl`) chiffre l'écart à un
+**facteur 3** sur la dispersion prédite ($0{,}70$ contre $0{,}23$ mm
+d'écart-type à 50 m), l'optimum se déplaçant à $105$ mm. Les $80$ mm
+avancés plus haut sont donc un *artefact de méthode*, non un optimum. Ce
+résultat conforte par ailleurs le *ladder tune* : le tireur qui balaie
+la course et retient le meilleur groupement trouve le nœud sans le
+calculer, là où viser un chiffre de taux angulaire peut l'en écarter.
+*Statut* : le mauvais placement découle du critère de la
+section [5](#sec:cinematique){reference-type="ref"
+reference="sec:cinematique"} et se lit sur le balayage ; son *coût*
+chiffré dépend en revanche du modèle de variabilité et de son paramètre
+le moins assuré --- prédiction testable, non validée.
+
 #### Finesse du réglage.
 
 Les pas relevés sur un tuner Starik/Centra --- porte-poids par crans de

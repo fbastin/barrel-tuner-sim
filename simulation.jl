@@ -559,14 +559,14 @@ function plot_modes(res; n_modes = 4, save_path = "")
 end
 
 # -----------------------------------------------------------------------------
-# 14. EXÉCUTION
+# 14. EXÉCUTION — sous garde PROGRAM_FILE, comme les autres scripts du
+#     dépôt : simulation.jl s'inclut ainsi comme BIBLIOTHÈQUE (cf.
+#     variability.jl) sans rejouer tous ses balayages.
 # -----------------------------------------------------------------------------
-println("="^72)
-println(" Simulation MEF + Newmark-β des vibrations transversales d'un canon")
-println(" Canon 26\" / .22 LR / Tuner réglable / Application à Kolbe (2015)")
-println("="^72)
-println()
 
+# -----------------------------------------------------------------------------
+# 13 bis. PARAMÈTRES DE MODÈLE ISSUS DES SOURCES EXTERNES
+# -----------------------------------------------------------------------------
 # Étape A — Bras de levier h_offset, ancré sur une MESURE (Vaughn 1998)
 #
 # HISTORIQUE. Jusqu'au 2026-07-18, h_offset était fixé en calant le PIC absolu
@@ -611,108 +611,124 @@ println()
 # omet — c'est le premier ancrage externe de ce déficit.
 const H_OFFSET_EFF = 16.5e-3
 
-println("[A] Bras de levier h_offset (effectif ; référent physique = Vaughn 1998)")
-println("-"^72)
-h_cal = H_OFFSET_EFF
-@printf("h_offset = %.2f mm (EFFECTIF) — physique d'après Vaughn ≈ 9-12 mm,\n", h_cal * 1e3)
-@printf("           soit ×%.1f-%.1f : la part que l'encastrement de culasse omet.\n",
-        h_cal * 1e3 / 12, h_cal * 1e3 / 9.3)
-# Pour mémoire, l'ancienne voie — un pic arbitraire de 10 MOA/ms — reste
-# disponible mais n'a AUCUN référent mesuré :
-#     h_cal = calibrate_h_offset(10.0; m_tuner = m_tuner_0)
-println()
-
-# Étape B — Tir nominal avec h_offset calibré
-println("[B] Tir nominal (tuner $(Int(m_tuner_0 * 1000)) g, h_offset calibré)")
-println("-"^72)
-result_nom = simulate_shot(m_tuner_0; h_offset = h_cal)
-println()
-
-# Étape B bis — Sensibilité à l'arme (poids + hauteur âme↔CG)
-# h_cal est l'étalon obtenu pour l'arme de référence (m_rifle_ref, h_cg_ref) ;
-# on prédit ici l'effet de monter le même canon sur des armes différentes.
-println("[B bis] Sensibilité à l'arme : amplitude ∝ h_cg, ∝ 1/m_rifle")
-println("-"^72)
-@printf("%12s | %14s | %14s | %16s\n",
-        "m_rifle (kg)", "h_cg (mm)", "h_offset (mm)", "pic |θ̇| (MOA/ms)")
-println("-"^72)
-for (m_rifle, h_cg) in [(m_rifle_ref, h_cg_ref), (3.5, h_cg_ref),
-                        (7.0, h_cg_ref), (m_rifle_ref, 0.0381),
-                        (m_rifle_ref, 0.0127)]
-    h_eff = physical_h_offset(h_cal; m_rifle = m_rifle, h_cg = h_cg)
-    res   = simulate_shot(m_tuner_0; h_offset = h_eff, verbose = false)
-    peak  = moa_per_ms(maximum(abs.(res.θdot_L)))
-    @printf("%12.1f | %14.1f | %14.3f | %16.2f\n",
-            m_rifle, h_cg * 1e3, h_eff * 1e3, peak)
-end
-println("-"^72)
-println("→ Arme plus légère ou âme plus haute ⇒ vibrations plus amples (retuning).")
-println()
-
-# Étape C — Balayage paramétrique
-result_sweep = tuner_sweep(0.0:0.025:0.4; h_offset = h_cal)
-println()
-
-# Étape C bis — Balayage en position, à masse fixe : LE réglage de terrain.
-# Deux masses encadrant la fourchette réelle des tuners .22 LR, d'après les
-# poids fabricants : PMA 4,2 oz (119 g) et EC v2 ~4 oz en bas, Harrell's rimfire
-# 8 oz (227 g) en haut. Le tube carbone Starik/Centra — l'un des plus répandus —
-# pèse ~200-220 g ENSEMBLE COMPLET, sa bague mobile seule étant bien plus
-# légère : il relève donc du bas de la fourchette.
-const M_TUNER_LOW  = 0.100
-const M_TUNER_HIGH = 0.200
-result_pos_low  = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
-result_pos_high = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
-println()
-
-# Étape C ter — DIAGNOSTIC SANS DIMENSION contre Kolbe.
-#
-# Kolbe est le seul à avoir MESURÉ le taux d'angle de bouche à la sortie, sur
-# une .22 LR : −9,4 MOA/ms canon nu, +6,0 MOA/ms canon accordé. Leur RAPPORT
-# est sans dimension, donc INDÉPENDANT de h_offset : aucun choix d'échelle,
-# ancien ou nouveau, ne peut le déplacer. C'est le seul test du modèle que la
-# calibration ne peut pas flatter.
-#
-# CE QUE CE TEST DIT — ET NE DIT PAS. La cible +6,0 est solide : elle est
-# redérivée par pure cinématique dans kolbe_validation.jl (5,91), sans passer
-# par son banc. Le modèle l'atteint. En revanche son −9,4 canon nu dépend de
-# la souplesse de son étau, qu'il NE PUBLIE PAS et qui est justement le
-# mécanisme de corps rigide que l'encastrement de culasse supprime ici.
-#
-# L'écart n'est donc PAS une réfutation du modèle : c'est la première MESURE
-# de la taille de ce qui lui manque. Le modèle donne un canon nu à ~−1 MOA/ms
-# quand Kolbe en lit −9,4 : la plage dynamique nu → accordé est 3 à 8 fois
-# trop étroite, et aucun facteur d'échelle unique ne rejoint les deux points
-# (il y faudrait un décalage constant de plusieurs MOA/ms, signature d'un
-# terme de mode commun). Cf. l'avertissement « ne pas se caler sur son étude
-# de cas » dans ROADMAP.md.
-println("[C ter] Diagnostic sans dimension contre Kolbe (mesuré, .22 LR)")
-println("-"^72)
+# Mesures de Kolbe (2015) sur .22 LR, taux d'angle de bouche à la sortie.
+# Servent au diagnostic sans dimension de l'étape [C ter].
 const KOLBE_BARE, KOLBE_TUNED = -9.4, 6.0
-θdot_bare = result_sweep[1].θdot_MOAms           # m_tuner = 0
-for (lbl, θdot_tuned) in (("accord en masse",    maximum(r.θdot_MOAms for r in result_sweep)),
-                          ("accord en position", maximum(r.θdot_MOAms for r in result_pos_low)))
-    r_mod, r_kol = θdot_tuned / θdot_bare, KOLBE_TUNED / KOLBE_BARE
-    @printf("  %-19s θ̇(nu) = %+6.2f → θ̇(accordé) = %+6.2f   rapport %+6.3f  (Kolbe %+6.3f, ×%.1f)\n",
-            lbl, θdot_bare, θdot_tuned, r_mod, r_kol, abs(r_mod / r_kol))
+
+
+if abspath(PROGRAM_FILE) == @__FILE__
+
+    println("="^72)
+    println(" Simulation MEF + Newmark-β des vibrations transversales d'un canon")
+    println(" Canon 26\" / .22 LR / Tuner réglable / Application à Kolbe (2015)")
+    println("="^72)
+    println()
+
+
+    println("[A] Bras de levier h_offset (effectif ; référent physique = Vaughn 1998)")
+    println("-"^72)
+    h_cal = H_OFFSET_EFF
+    @printf("h_offset = %.2f mm (EFFECTIF) — physique d'après Vaughn ≈ 9-12 mm,\n", h_cal * 1e3)
+    @printf("           soit ×%.1f-%.1f : la part que l'encastrement de culasse omet.\n",
+            h_cal * 1e3 / 12, h_cal * 1e3 / 9.3)
+    # Pour mémoire, l'ancienne voie — un pic arbitraire de 10 MOA/ms — reste
+    # disponible mais n'a AUCUN référent mesuré :
+    #     h_cal = calibrate_h_offset(10.0; m_tuner = m_tuner_0)
+    println()
+
+    # Étape B — Tir nominal avec h_offset calibré
+    println("[B] Tir nominal (tuner $(Int(m_tuner_0 * 1000)) g, h_offset calibré)")
+    println("-"^72)
+    result_nom = simulate_shot(m_tuner_0; h_offset = h_cal)
+    println()
+
+    # Étape B bis — Sensibilité à l'arme (poids + hauteur âme↔CG)
+    # h_cal est l'étalon obtenu pour l'arme de référence (m_rifle_ref, h_cg_ref) ;
+    # on prédit ici l'effet de monter le même canon sur des armes différentes.
+    println("[B bis] Sensibilité à l'arme : amplitude ∝ h_cg, ∝ 1/m_rifle")
+    println("-"^72)
+    @printf("%12s | %14s | %14s | %16s\n",
+            "m_rifle (kg)", "h_cg (mm)", "h_offset (mm)", "pic |θ̇| (MOA/ms)")
+    println("-"^72)
+    for (m_rifle, h_cg) in [(m_rifle_ref, h_cg_ref), (3.5, h_cg_ref),
+                            (7.0, h_cg_ref), (m_rifle_ref, 0.0381),
+                            (m_rifle_ref, 0.0127)]
+        h_eff = physical_h_offset(h_cal; m_rifle = m_rifle, h_cg = h_cg)
+        res   = simulate_shot(m_tuner_0; h_offset = h_eff, verbose = false)
+        peak  = moa_per_ms(maximum(abs.(res.θdot_L)))
+        @printf("%12.1f | %14.1f | %14.3f | %16.2f\n",
+                m_rifle, h_cg * 1e3, h_eff * 1e3, peak)
+    end
+    println("-"^72)
+    println("→ Arme plus légère ou âme plus haute ⇒ vibrations plus amples (retuning).")
+    println()
+
+    # Étape C — Balayage paramétrique
+    result_sweep = tuner_sweep(0.0:0.025:0.4; h_offset = h_cal)
+    println()
+
+    # Étape C bis — Balayage en position, à masse fixe : LE réglage de terrain.
+    # Deux masses encadrant la fourchette réelle des tuners .22 LR, d'après les
+    # poids fabricants : PMA 4,2 oz (119 g) et EC v2 ~4 oz en bas, Harrell's rimfire
+    # 8 oz (227 g) en haut. Le tube carbone Starik/Centra — l'un des plus répandus —
+    # pèse ~200-220 g ENSEMBLE COMPLET, sa bague mobile seule étant bien plus
+    # légère : il relève donc du bas de la fourchette.
+    const M_TUNER_LOW  = 0.100
+    const M_TUNER_HIGH = 0.200
+    result_pos_low  = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
+    result_pos_high = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
+    println()
+
+    # Étape C ter — DIAGNOSTIC SANS DIMENSION contre Kolbe.
+    #
+    # Kolbe est le seul à avoir MESURÉ le taux d'angle de bouche à la sortie, sur
+    # une .22 LR : −9,4 MOA/ms canon nu, +6,0 MOA/ms canon accordé. Leur RAPPORT
+    # est sans dimension, donc INDÉPENDANT de h_offset : aucun choix d'échelle,
+    # ancien ou nouveau, ne peut le déplacer. C'est le seul test du modèle que la
+    # calibration ne peut pas flatter.
+    #
+    # CE QUE CE TEST DIT — ET NE DIT PAS. La cible +6,0 est solide : elle est
+    # redérivée par pure cinématique dans kolbe_validation.jl (5,91), sans passer
+    # par son banc. Le modèle l'atteint. En revanche son −9,4 canon nu dépend de
+    # la souplesse de son étau, qu'il NE PUBLIE PAS et qui est justement le
+    # mécanisme de corps rigide que l'encastrement de culasse supprime ici.
+    #
+    # L'écart n'est donc PAS une réfutation du modèle : c'est la première MESURE
+    # de la taille de ce qui lui manque. Le modèle donne un canon nu à ~−1 MOA/ms
+    # quand Kolbe en lit −9,4 : la plage dynamique nu → accordé est 3 à 8 fois
+    # trop étroite, et aucun facteur d'échelle unique ne rejoint les deux points
+    # (il y faudrait un décalage constant de plusieurs MOA/ms, signature d'un
+    # terme de mode commun). Cf. l'avertissement « ne pas se caler sur son étude
+    # de cas » dans ROADMAP.md.
+    println("[C ter] Diagnostic sans dimension contre Kolbe (mesuré, .22 LR)")
+    println("-"^72)
+    θdot_bare = result_sweep[1].θdot_MOAms           # m_tuner = 0
+    for (lbl, θdot_tuned) in (("accord en masse",    maximum(r.θdot_MOAms for r in result_sweep)),
+                              ("accord en position", maximum(r.θdot_MOAms for r in result_pos_low)))
+        r_mod, r_kol = θdot_tuned / θdot_bare, KOLBE_TUNED / KOLBE_BARE
+        @printf("  %-19s θ̇(nu) = %+6.2f → θ̇(accordé) = %+6.2f   rapport %+6.3f  (Kolbe %+6.3f, ×%.1f)\n",
+                lbl, θdot_bare, θdot_tuned, r_mod, r_kol, abs(r_mod / r_kol))
+    end
+    println("  ⇒ écart STRUCTUREL, non corrigeable par h_offset. Voir ROADMAP.md.")
+    println()
+
+    # Étape D — Tracés
+    println("[D] Génération des tracés")
+    println("-"^72)
+    plot_shot(result_nom; save_path = "plot_tir_nominal.png")
+    plot_position_sweep(result_pos_low, result_pos_high;
+                        save_path = "plot_balayage_position.png")
+    plot_sweep(result_sweep; save_path = "plot_balayage_tuner.png")
+    plot_modes(result_nom; save_path = "plot_modes_propres.png", n_modes = 4)
+    println()
+
+    println("="^72)
+    println("Remarques :")
+    println(" • h_offset calibré pour reproduire l'amplitude expérimentale de Kolbe.")
+    println(" • Les tracés sont enregistrés en PNG dans le répertoire courant.")
+    println(" • Amortissement de Rayleigh : ζ₁ = 0.5 %, ζ₂ = 1 %.")
+    println(" • Schéma de Newmark : (γ, β) = (1/2, 1/4), Δt = 5 µs.")
+    println("="^72)
+
+
 end
-println("  ⇒ écart STRUCTUREL, non corrigeable par h_offset. Voir ROADMAP.md.")
-println()
-
-# Étape D — Tracés
-println("[D] Génération des tracés")
-println("-"^72)
-plot_shot(result_nom; save_path = "plot_tir_nominal.png")
-plot_position_sweep(result_pos_low, result_pos_high;
-                    save_path = "plot_balayage_position.png")
-plot_sweep(result_sweep; save_path = "plot_balayage_tuner.png")
-plot_modes(result_nom; save_path = "plot_modes_propres.png", n_modes = 4)
-println()
-
-println("="^72)
-println("Remarques :")
-println(" • h_offset calibré pour reproduire l'amplitude expérimentale de Kolbe.")
-println(" • Les tracés sont enregistrés en PNG dans le répertoire courant.")
-println(" • Amortissement de Rayleigh : ζ₁ = 0.5 %, ζ₂ = 1 %.")
-println(" • Schéma de Newmark : (γ, β) = (1/2, 1/4), Δt = 5 µs.")
-println("="^72)
