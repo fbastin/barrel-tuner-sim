@@ -603,7 +603,12 @@ result_sweep = tuner_sweep(0.0:0.025:0.4; h_offset = h_cal)
 println()
 
 # Étape C bis — Balayage en position, à masse fixe : LE réglage de terrain.
-result_pos = position_sweep(0.0:0.005:0.10; m_tuner = m_tuner_0, h_offset = h_cal)
+# Masse mobile de 100 g : ordre de grandeur d'un tuner de bouche .22 LR. Repère
+# publié : un tube carbone Starik/Centra complet pèse ~200-220 g TUNER COMPRIS —
+# le fabricant ne publie pas la masse de la seule bague mobile, qui est donc
+# nettement inférieure à ce chiffre d'ensemble.
+const M_TUNER_POS = 0.100
+result_pos = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_POS, h_offset = h_cal)
 println()
 
 # Étape D — Tracés
