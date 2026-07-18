@@ -417,17 +417,19 @@ la section [5.5](#sec:validation_num){reference-type="ref"
 reference="sec:validation_num"} au moment de recul physique en
 factorisant sa dépendance, $$\label{eq:hoffset_phys}
         h_\text{offset}(m_r, h_\text{cg}) \;=\; h_\text{offset}^\text{réf}\,\frac{h_\text{cg}}{h_\text{cg}^\text{réf}}\,\frac{m_r^\text{réf}}{m_r},$$
-où la *seule* constante $h_\text{offset}^\text{réf}$ est calée une fois
-pour toutes sur une amplitude vibratoire plausible pour l'arme de
-référence ($m_r^\text{réf} = 5$ kg, $h_\text{cg}^\text{réf} = 25{,}4$ mm
---- les valeurs par défaut du simulateur de Kolbe, non une mesure). Au
-lieu de recalibrer pour chaque arme, on *prédit* alors la dépendance à
-deux grandeurs mesurables sur l'arme réelle --- le poids total $m_r$
-(aisé à peser) et la distance $h_\text{cg}$ de l'âme au centre de
-gravité (plus délicate, déterminée par équilibrage) : monter le même
-canon sur une arme plus légère, ou dont l'âme est plus haut placée
-au-dessus du centre de gravité, amplifie les vibrations et impose un
-nouveau réglage du tuner.
+où la *seule* constante $h_\text{offset}^\text{réf}$ est fixée une fois
+pour toutes pour l'arme de référence ($m_r^\text{réf} = 5$ kg,
+$h_\text{cg}^\text{réf} = 25{,}4$ mm --- les valeurs par défaut du
+simulateur de Kolbe, non une mesure), et bornée par la mesure
+d'excitation de Vaughn `\cite{Vaughn}`{=latex}
+(section [5.5](#sec:validation_num){reference-type="ref"
+reference="sec:validation_num"}). Au lieu de recalibrer pour chaque
+arme, on *prédit* alors la dépendance à deux grandeurs mesurables sur
+l'arme réelle --- le poids total $m_r$ (aisé à peser) et la distance
+$h_\text{cg}$ de l'âme au centre de gravité (plus délicate, déterminée
+par équilibrage) : monter le même canon sur une arme plus légère, ou
+dont l'âme est plus haut placée au-dessus du centre de gravité, amplifie
+les vibrations et impose un nouveau réglage du tuner.
 
 #### (a$'$) Conditions aux limites : encastrement *vs* action souple.
 
@@ -809,12 +811,22 @@ fraction $\phi=0{,}35$ du canon, puis coast, calé sur $\tau_v$ de
 Kolbe), excitation par moment de recul à la culasse
 $M(t) = p(t)\,A_\text{bore}\,h_\text{offset}$, charge mobile du
 projectile, amortissement de Rayleigh et schéma de Newmark-$\beta$. Le
-bras de levier $h_\text{offset}$ est calibré automatiquement sur un pic
-d'amplitude de $\sim 10$ MOA/ms. Cette valeur de pic est un *choix
-d'échelle* de notre part, non un chiffre de Kolbe : il ne publie aucun
-pic d'oscillation, mais seulement le taux *à l'instant de sortie*
-($-9{,}4$ MOA/ms canon nu, $+6{,}0$ tuned). La seule grandeur confrontée
-à la mesure est donc $\dot\theta(L,t_b)$, non le pic.
+bras de levier $h_\text{offset}$ y vaut $16{,}5$ mm. C'est une grandeur
+*effective* et non une cote : elle situe le modèle à l'optimum de
+compensation pour un réglage de tuner compris dans la course réelle. Son
+référent physique est donné par la seule mesure publiée de l'excitation
+elle-même, celle de Vaughn `\cite{Vaughn}`{=latex} (jauges de contrainte
+sur l'anneau de culasse d'une .270 Win, chapitre 4) : le moment
+*appliqué* qu'il rapporte, $\sim 1500$ in-lb, correspond à un bras de
+$11{,}9$ mm, soit $\sim 9$ à $12$ mm une fois reporté en .22 LR par
+[\[eq:hoffset_phys\]](#eq:hoffset_phys){reference-type="eqref"
+reference="eq:hoffset_phys"}. Le rapport, de l'ordre de $1{,}4$ à
+$1{,}8$, *chiffre* ce que l'ossature encastrée omet --- la rotation
+d'ensemble de l'arme sous le recul. Adopter au contraire la valeur
+physique dans le modèle amputé le rend inutilisable : il plafonne alors
+à $3{,}5$ MOA/ms et n'atteint plus jamais l'optimum de $6{,}0$, en masse
+comme en position. La seule grandeur confrontée à la mesure reste
+$\dot\theta(L,t_b)$.
 
 ![Réponse transitoire simulée pour la configuration nominale (tuner
 200 g, $h_\text{offset} = 16{,}5$ mm). De haut en bas : déflexion
@@ -1251,6 +1263,38 @@ gravity was in the calculations, but subtracted out for the chart.  La
 flèche statique est retirée des *courbes*, non de la colonne *proj* du
 tableau.
 
+#### 12. Une excitation supposée identique à chaque coup.
+
+Le modèle applique coup après coup *exactement* le même moment de recul
+: une même cartouche y produit une même vibration, donc un même angle de
+bouche à la sortie. L'hypothèse est commode --- elle autorise à parler
+d'*un* instant de sortie et d'*un* réglage optimal --- mais elle est
+fausse, et l'écart a été mesuré. Vaughn `\cite{Vaughn}`{=latex} a
+instrumenté l'anneau de culasse à jauges de contrainte : sur une
+.270 Win, le moment crête vaut nominalement 450 in-lb mais *varie de 300
+à 600 in-lb d'un coup à l'autre avec le même lot*, soit
+$\sim \pm 30\,\%$, l'instant du pic se déplaçant lui aussi. Il en
+attribue l'essentiel aux variations de poussée de culasse et aux
+asymétries du boîtier. Sur son arme non modifiée, cette *variabilité*
+--- et non la vibration moyenne --- produit à elle seule
+$\sim 0{,}8$ pouce ($\sim 20$ mm) de dispersion à 100 yards. Trois
+conséquences pour ce document : un tuner accordé sur le comportement
+*moyen* subit malgré tout cet étalement, qui constitue un *plancher* au
+même titre que la dispersion propre de la munition ; la fenêtre
+d'optimalité étroite de la
+section [5](#sec:cinematique){reference-type="ref"
+reference="sec:cinematique"} est en réalité *brouillée*, $t_b$ et
+l'amplitude ne se répétant pas à l'identique ; enfin le moment de recul
+n'est pas la seule source --- Vaughn en identifie *trois* (recul sur le
+tenon, poussée de culasse sur des tenons inégalement engagés, asymétrie
+du boîtier) là où
+[\[eq:moment_recul\]](#eq:moment_recul){reference-type="eqref"
+reference="eq:moment_recul"} n'en retient qu'une, et supprimer la seule
+composante de recul *n'annule pas* le moment mais révèle une composante
+inverse. Ces chiffres portent sur une carabine centerfire de chasse :
+leur ordre de grandeur ne se transpose pas à la .22 LR de match, mais le
+mécanisme, lui, se transpose.
+
 #### Synthèse des statuts.
 
 Les éléments réunis dans ce document sont de nature inégale et gagnent à
@@ -1259,8 +1303,9 @@ le critère de 6,0 MOA/ms (Kolbe, deux méthodes indépendantes
 concordantes) ; *calculé mais non validé* --- l'étude de Harral, d'où
 procède la mise en garde du point 9 ; *en échec* --- la recréation
 ci-dessus, faute de rotation d'ensemble ; *hors modèle* --- la vibration
-horizontale (point 7) et l'excitation rimfire au-delà du seul moment de
-recul (point 6).
+horizontale (point 7), l'excitation rimfire au-delà du seul moment de
+recul (point 6), et la variabilité de cette excitation d'un coup à
+l'autre, mesurée à $\pm 30\,\%$ (point 12).
 
 # Cas de l'arme à air précomprimée (PCP) {#sec:pcp}
 
@@ -1383,6 +1428,10 @@ K.-J. Bathe, *Finite Element Procedures*, 2nd ed., Prentice Hall, 2014.
 
 D. Carlucci and S. Jacobson, *Ballistics: Theory and Design of Guns and
 Ammunition*, 3rd ed., CRC Press, 2018.
+
+H. R. Vaughn, *Rifle Accuracy Facts*, Precision Shooting Inc., 1998. ---
+Seule source mesurant l'*excitation* elle-même (jauges de contrainte à
+l'anneau de culasse, accéléromètre à la bouche), en centerfire.
 
 G. Kolbe, *Using barrel vibrations to tune a barrel --- The Vibrations
 of a Barrel Tuned for Positive Compensation*, Border Barrels, 2015.

@@ -567,17 +567,59 @@ println(" Canon 26\" / .22 LR / Tuner réglable / Application à Kolbe (2015)")
 println("="^72)
 println()
 
-# Étape A — Calibration automatique de h_offset
-# Kolbe mesure le taux d'angle de bouche À L'INSTANT DE SORTIE : −9.4 MOA/ms
-# (bouche descendante) pour le canon nu, +6.0 MOA/ms pour le canon tuned.
-# Il ne publie AUCUN pic d'oscillation. La cible de 10 MOA/ms ci-dessous est
-# donc NOTRE choix d'échelle (amplitude plausible), pas un chiffre de Kolbe :
-# elle sert seulement à fixer h_offset, la seule grandeur validable étant le
-# taux À t_b (voir la colonne θ̇(t_b) du balayage, comparée à la cible 6.0).
-println("[A] Calibration automatique de h_offset")
+# Étape A — Bras de levier h_offset, ancré sur une MESURE (Vaughn 1998)
+#
+# HISTORIQUE. Jusqu'au 2026-07-18, h_offset était fixé en calant le PIC absolu
+# de |θ̇(L,t)| sur 10 MOA/ms — un chiffre choisi par nous pour son « amplitude
+# plausible », que personne n'a mesuré. Toutes les amplitudes du modèle
+# reposaient donc sur un paramètre libre. On l'ancre désormais sur la seule
+# mesure publiée de l'EXCITATION elle-même.
+#
+# SOURCE. H. R. Vaughn, « Rifle Accuracy Facts » (Precision Shooting, 1998),
+# ch. 4 : jauges de contrainte sur l'anneau de culasse d'une .270 Win à
+# 53 000 psi. Piège que Vaughn signale lui-même — les jauges lisent un moment
+# de RÉPONSE (~450 in-lb), bien plus petit que le moment APPLIQUÉ (~1500 in-lb,
+# fig. 4-33) parce que le canon « can't respond quickly enough ». C'est le
+# moment APPLIQUÉ qui correspond à notre excitation :
+#     1500 in-lb / (53 000 psi × A_âme(.277)) → bras de levier ≈ 11,9 mm.
+#
+# TRANSPORT .270 → .22 LR. La différence de poussée est déjà portée par le
+# p·A_bore du modèle ; h ne transporte que la géométrie et la dynamique de
+# l'arme, via la loi documentée en physical_h_offset (h ∝ h_cg, h ∝ 1/m_rifle) :
+#     h(.22 LR) = 11,9 mm × (h_cg_22 / h_cg_270) × (m_270 / m_22)
+# Les deux h_cg sont du même ordre (~25 mm, axe d'âme → CG). Vaughn ne publie
+# PAS la masse totale de son arme (seulement le canon, 2,8 lb) ; en retenant
+# 3,9 kg pour une .270 sporter avec lunette, h(.22 LR) ≈ 9,3 mm — à lire comme
+# un ORDRE DE GRANDEUR (~10 mm, ni 5 ni 40), l'estimation héritant d'une masse
+# supposée, d'un ansatz non validé et d'un report centerfire → rimfire.
+#
+# POURQUOI ON NE RETIENT PAS 9,3 mm. Essayé : le modèle plafonne alors à
+# 3,5 MOA/ms et n'atteint plus JAMAIS l'optimum de compensation de 6,0, en
+# masse comme en position — plus aucun sweet spot. C'est cohérent avec l'étape
+# [C ter] : il manque à l'ossature encastrée la rotation d'ensemble de l'arme.
+# Un h « physiquement juste » dans un modèle amputé donne un modèle
+# physiquement faux ET inutilisable.
+#
+# CE QU'ON RETIENT. h_offset est un bras de levier EFFECTIF, non une cote :
+# la valeur qui amène le modèle à l'optimum de compensation (+6,0 MOA/ms à la
+# sortie — cible redérivée par pure cinématique dans kolbe_validation.jl, 5,91,
+# donc indépendante du banc de Kolbe) pour un réglage de tuner situé dans la
+# course réelle. Le progrès sur l'ancienne version n'est pas la valeur, presque
+# inchangée, mais son STATUT : elle cesse d'être un choix d'échelle sans
+# référent pour devenir une grandeur effective dont Vaughn borne le référent
+# physique (~9-12 mm). Leur rapport, ~1,4 à 1,8, CHIFFRE ce que l'encastrement
+# omet — c'est le premier ancrage externe de ce déficit.
+const H_OFFSET_EFF = 16.5e-3
+
+println("[A] Bras de levier h_offset (effectif ; référent physique = Vaughn 1998)")
 println("-"^72)
-target_peak = 10.0   # MOA/ms en pic absolu de la vibration
-h_cal = calibrate_h_offset(target_peak; m_tuner = m_tuner_0)
+h_cal = H_OFFSET_EFF
+@printf("h_offset = %.2f mm (EFFECTIF) — physique d'après Vaughn ≈ 9-12 mm,\n", h_cal * 1e3)
+@printf("           soit ×%.1f-%.1f : la part que l'encastrement de culasse omet.\n",
+        h_cal * 1e3 / 12, h_cal * 1e3 / 9.3)
+# Pour mémoire, l'ancienne voie — un pic arbitraire de 10 MOA/ms — reste
+# disponible mais n'a AUCUN référent mesuré :
+#     h_cal = calibrate_h_offset(10.0; m_tuner = m_tuner_0)
 println()
 
 # Étape B — Tir nominal avec h_offset calibré
@@ -621,6 +663,40 @@ const M_TUNER_LOW  = 0.100
 const M_TUNER_HIGH = 0.200
 result_pos_low  = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
 result_pos_high = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
+println()
+
+# Étape C ter — DIAGNOSTIC SANS DIMENSION contre Kolbe.
+#
+# Kolbe est le seul à avoir MESURÉ le taux d'angle de bouche à la sortie, sur
+# une .22 LR : −9,4 MOA/ms canon nu, +6,0 MOA/ms canon accordé. Leur RAPPORT
+# est sans dimension, donc INDÉPENDANT de h_offset : aucun choix d'échelle,
+# ancien ou nouveau, ne peut le déplacer. C'est le seul test du modèle que la
+# calibration ne peut pas flatter.
+#
+# CE QUE CE TEST DIT — ET NE DIT PAS. La cible +6,0 est solide : elle est
+# redérivée par pure cinématique dans kolbe_validation.jl (5,91), sans passer
+# par son banc. Le modèle l'atteint. En revanche son −9,4 canon nu dépend de
+# la souplesse de son étau, qu'il NE PUBLIE PAS et qui est justement le
+# mécanisme de corps rigide que l'encastrement de culasse supprime ici.
+#
+# L'écart n'est donc PAS une réfutation du modèle : c'est la première MESURE
+# de la taille de ce qui lui manque. Le modèle donne un canon nu à ~−1 MOA/ms
+# quand Kolbe en lit −9,4 : la plage dynamique nu → accordé est 3 à 8 fois
+# trop étroite, et aucun facteur d'échelle unique ne rejoint les deux points
+# (il y faudrait un décalage constant de plusieurs MOA/ms, signature d'un
+# terme de mode commun). Cf. l'avertissement « ne pas se caler sur son étude
+# de cas » dans ROADMAP.md.
+println("[C ter] Diagnostic sans dimension contre Kolbe (mesuré, .22 LR)")
+println("-"^72)
+const KOLBE_BARE, KOLBE_TUNED = -9.4, 6.0
+θdot_bare = result_sweep[1].θdot_MOAms           # m_tuner = 0
+for (lbl, θdot_tuned) in (("accord en masse",    maximum(r.θdot_MOAms for r in result_sweep)),
+                          ("accord en position", maximum(r.θdot_MOAms for r in result_pos_low)))
+    r_mod, r_kol = θdot_tuned / θdot_bare, KOLBE_TUNED / KOLBE_BARE
+    @printf("  %-19s θ̇(nu) = %+6.2f → θ̇(accordé) = %+6.2f   rapport %+6.3f  (Kolbe %+6.3f, ×%.1f)\n",
+            lbl, θdot_bare, θdot_tuned, r_mod, r_kol, abs(r_mod / r_kol))
+end
+println("  ⇒ écart STRUCTUREL, non corrigeable par h_offset. Voir ROADMAP.md.")
 println()
 
 # Étape D — Tracés
