@@ -44,6 +44,31 @@ seul temps de vol, une traînée verticale d'environ $6$ mm --- largement
 de quoi ruiner un groupement de match. C'est précisément cette
 dispersion que la compensation positive vise à annuler.
 
+#### Ce que cela borne, et pourquoi le gain est contre-intuitif.
+
+Ce terme est le *seul* qu'un tuner accordé retire : la dispersion propre
+de la munition, le vent et le tireur restent intacts. En supposant ces
+sources indépendantes, elles se composent en somme quadratique, de sorte
+qu'un groupement $G$ ne peut au mieux se réduire qu'à
+$$G_\text{res} \;=\; \sqrt{G^2 - \Delta h^2}, \qquad \Delta h \approx g\,D^2\,\Delta v / \bar v^3.
+        \label{eq:gres}$$ Cette borne ne fait intervenir *aucune*
+grandeur vibratoire --- ni amplitude, ni fréquence, ni masse de tuner
+--- et se calcule donc à partir de trois chiffres que le tireur mesure
+déjà : sa distance, son écart de vitesse au chronographe et son
+groupement habituel. C'est, à ce titre, la prédiction la plus robuste de
+ce document, là où les valeurs absolues de $\dot\theta$ des
+sections [5.5](#sec:validation_num){reference-type="ref"
+reference="sec:validation_num"} et suivantes restent des ordres de
+grandeur calibrés. Sa conséquence est contre-intuitive : *plus le tireur
+est bon, plus un tuner rapporte*. En .22 LR à 50 m avec
+$\Delta v = 10$ m/s, les écarts de vitesse pèsent $7{,}6$ mm ; sur un
+groupement de $20$ mm, les supprimer ne fait gagner que $8\,\%$, tandis
+que sur un groupement de $8$ mm le gain atteint $70\,\%$. Le tuner est
+ainsi structurellement un outil de *benchrest*, ce qui explique aussi
+que les témoignages divergent tant d'un tireur à l'autre. Cette borne ne
+vaut toutefois que pour les armes à recul
+(cf. section [7](#sec:pcp){reference-type="ref" reference="sec:pcp"}).
+
 ## Le canon vibre comme un diapason
 
 En réalité, lorsque le coup part, le canon ne reste pas immobile : il se
@@ -393,15 +418,16 @@ reference="sec:validation_num"} au moment de recul physique en
 factorisant sa dépendance, $$\label{eq:hoffset_phys}
         h_\text{offset}(m_r, h_\text{cg}) \;=\; h_\text{offset}^\text{réf}\,\frac{h_\text{cg}}{h_\text{cg}^\text{réf}}\,\frac{m_r^\text{réf}}{m_r},$$
 où la *seule* constante $h_\text{offset}^\text{réf}$ est calée une fois
-pour toutes sur l'enveloppe vibratoire mesurée par Kolbe pour son arme
-de référence ($m_r^\text{réf} = 5$ kg,
-$h_\text{cg}^\text{réf} = 25{,}4$ mm). Au lieu de recalibrer pour chaque
-arme, on *prédit* alors la dépendance à deux grandeurs mesurables sur
-l'arme réelle --- le poids total $m_r$ (aisé à peser) et la distance
-$h_\text{cg}$ de l'âme au centre de gravité (plus délicate, déterminée
-par équilibrage) : monter le même canon sur une arme plus légère, ou
-dont l'âme est plus haut placée au-dessus du centre de gravité, amplifie
-les vibrations et impose un nouveau réglage du tuner.
+pour toutes sur une amplitude vibratoire plausible pour l'arme de
+référence ($m_r^\text{réf} = 5$ kg, $h_\text{cg}^\text{réf} = 25{,}4$ mm
+--- les valeurs par défaut du simulateur de Kolbe, non une mesure). Au
+lieu de recalibrer pour chaque arme, on *prédit* alors la dépendance à
+deux grandeurs mesurables sur l'arme réelle --- le poids total $m_r$
+(aisé à peser) et la distance $h_\text{cg}$ de l'âme au centre de
+gravité (plus délicate, déterminée par équilibrage) : monter le même
+canon sur une arme plus légère, ou dont l'âme est plus haut placée
+au-dessus du centre de gravité, amplifie les vibrations et impose un
+nouveau réglage du tuner.
 
 #### (a$'$) Conditions aux limites : encastrement *vs* action souple.
 
@@ -611,12 +637,17 @@ cumulés :
     trajectoire tendue, la chute sous la ligne de visée s'écrit
     $h_\text{bal}(v_0) \simeq g D^2/(2 v_0^2)$, d'où $$\label{eq:dhbal}
                 \frac{\partial h_\text{bal}}{\partial v_0} \;\simeq\; -\,\frac{g D^2}{v_0^3} \;<\;0.$$
-    Numériquement, à $D=50$ m et $v_0 \approx 308$ m/s (1010 ft/s, .22
-    LR Match),
-    $\partial h_\text{bal}/\partial v_0 \approx -0{,}84$ mm/(m/s), soit
-    environ $-0{,}016$ MOA par ft/s ; ce nombre est aussi celui calculé
-    par Kolbe `\cite{Kolbe}`{=latex} à partir d'un solveur de
-    trajectoire balistique.
+    Numériquement, à $D=50$ m et $v_0 \approx 318$ m/s (1043 ft/s, Eley
+    Tenex),
+    $\partial h_\text{bal}/\partial v_0 \approx -0{,}76$ mm/(m/s), soit
+    $-0{,}016$ MOA par ft/s : exactement le nombre calculé par
+    Kolbe `\cite{Kolbe}`{=latex} à partir d'un solveur de trajectoire
+    balistique. Le choix de $v_0$ importe et doit rester *cohérent* avec
+    la munition sur laquelle $\tau_v$ a été mesuré (Eley Tenex,
+    cf. ci-dessous) : à $v_0 = 308$ m/s on obtiendrait $-0{,}0176$ MOA
+    par ft/s, soit 10 % de trop, et l'écart se propagerait jusqu'au
+    critère [\[eq:dthetaopt\]](#eq:dthetaopt){reference-type="eqref"
+    reference="eq:dthetaopt"}.
 
 2.  *Décalage du temps de sortie.* La cinématique interne couple $t_b$
     et $v_0$ : à la limite, $t_b \propto 1/v_0$ donne
@@ -644,11 +675,17 @@ sortie : $$\label{eq:dthetaopt}
 $\partial t_b/\partial v_0$ se composent pour rendre
 $\dot\theta_\text{out}^\star$ positif : la bouche doit donc se relever
 ($\dot\theta>0$) au moment du départ du coup.* Numériquement, avec
-$D=50$ m, $v_0 = 308$ m/s et $\tau_v = 8{,}8\,\mu$s/(m/s) :
-$$\dot\theta_\text{out}^\star \;\approx\; 1{,}9\ \text{mrad/ms} \;\approx\; 6{,}6\ \text{MOA/ms},$$
-à comparer aux $6{,}0$ MOA/ms mesurés expérimentalement par Kolbe
-(l'écart de l'ordre de 10 % s'explique par la non-tendance de la
-trajectoire à 50 m et par les approximations sur $\tau_v$).
+$D=50$ m, $v_0 = 318$ m/s et $\tau_v = 8{,}8\,\mu$s/(m/s) :
+$$\dot\theta_\text{out}^\star \;\approx\; 1{,}73\ \text{mrad/ms} \;\approx\; 5{,}96\ \text{MOA/ms},$$
+à comparer aux $6{,}0$ MOA/ms mesurés expérimentalement par Kolbe :
+*l'accord est meilleur que* $1\,\%$. Ce n'est pas fortuit --- les deux
+chemins sont indépendants. Kolbe multiplie sa chute naturelle mesurée
+($0{,}016$ MOA par ft/s) par sa sensibilité de temps de sortie ($375$
+ft/s par ms) ; nous partons de la cinématique balistique
+[\[eq:dhbal\]](#eq:dhbal){reference-type="eqref" reference="eq:dhbal"}
+et de $\tau_v$. Que les deux convergent à $1\,\%$ près valide la chaîne
+de raisonnement, à condition de garder $v_0$ cohérent avec la munition
+de référence.
 
 ## Nœud spatial *vs* nœud temporel : précision sémantique {#sec:nodes}
 
@@ -767,34 +804,83 @@ vers l'extraction de la composante rotationnelle au nœud terminal.
 
 Le simulateur en `Julia` associé à ce document (`simulation.jl`)
 implémente l'ensemble du formalisme : assemblage MEF, encastrement,
-tuner, balistique interne (modèle exponentiel calé sur $t_b$ et
-$v_\text{muzzle}$), excitation par moment de recul à la culasse
+tuner, balistique interne (profil « burnout » : accélération sur une
+fraction $\phi=0{,}35$ du canon, puis coast, calé sur $\tau_v$ de
+Kolbe), excitation par moment de recul à la culasse
 $M(t) = p(t)\,A_\text{bore}\,h_\text{offset}$, charge mobile du
 projectile, amortissement de Rayleigh et schéma de Newmark-$\beta$. Le
-bras de levier $h_\text{offset}$ est calibré automatiquement pour
-reproduire l'enveloppe vibratoire mesurée par Kolbe ($\sim 10$ MOA/ms en
-pic).
+bras de levier $h_\text{offset}$ est calibré automatiquement sur un pic
+d'amplitude de $\sim 10$ MOA/ms. Cette valeur de pic est un *choix
+d'échelle* de notre part, non un chiffre de Kolbe : il ne publie aucun
+pic d'oscillation, mais seulement le taux *à l'instant de sortie*
+($-9{,}4$ MOA/ms canon nu, $+6{,}0$ tuned). La seule grandeur confrontée
+à la mesure est donc $\dot\theta(L,t_b)$, non le pic.
 
 ![Réponse transitoire simulée pour la configuration nominale (tuner
 200 g, $h_\text{offset} = 16{,}5$ mm). De haut en bas : déflexion
 $y(L,t)$, angle de bouche $\theta(L,t)$, et vitesse angulaire
-$\dot\theta(L,t)$. Le trait rouge pointillé marque $t_b = 2{,}5$ ms ; le
-trait vert pointillé sur le panneau inférieur indique la cible Kolbe (6
-MOA/ms). La valeur calculée à $t_b$ est de $+6{,}64$ MOA/ms, en accord à
-$\sim 10\,\%$ avec la
-mesure.](plot_tir_nominal.png){#fig:reponse_transitoire
+$\dot\theta(L,t)$. Le trait rouge pointillé marque $t_b = 2{,}80$ ms
+(profil burnout) ; le trait vert pointillé indique la cible Kolbe (6
+MOA/ms). À $t_b$, le modèle donne $\dot\theta = +1{,}8$ MOA/ms : du bon
+signe (montant, tuner installé) mais d'amplitude sous la cible --- voir
+la réserve ci-dessous.](plot_tir_nominal.png){#fig:reponse_transitoire
 width="0.85\\linewidth"}
 
 ![Balayage paramétrique sur la masse du tuner $m_t \in [0, 400]$ g
 (autres paramètres fixes). De haut en bas : (i) $\dot\theta(L,t_b)$
-varie peu (5,9 à 6,7 MOA/ms) car $t_b/T_1 \approx 0{,}085$ reste dans le
-quart de cycle ascendant initial ; (ii) $\theta(L,t_b)$ varie en
-revanche fortement et monotoniquement ($+166$ à $-255$ µrad), traduisant
-un décalage du point d'impact moyen ; (iii) $f_1$ décroît
-monotoniquement de 39,9 à 30,3 Hz (relation prévue par le quotient de
-Rayleigh, équation [\[eq:dwdmt\]](#eq:dwdmt){reference-type="eqref"
+*change de signe* --- $-1{,}1$ MOA/ms pour le canon nu (bouche
+descendante à la sortie) vers $+2{,}6$ à 400 g (montante) : c'est le
+mécanisme de Kolbe, le tuner faisant passer la bouche de descendante à
+montante ; (ii) $\theta(L,t_b)$ décroît monotoniquement de $+416$ à
+$+205$ µrad, traduisant un décalage du point d'impact moyen ;
+(iii) $f_1$ décroît monotoniquement de 39,9 à 30,3 Hz (relation prévue
+par le quotient de Rayleigh, équation
+[\[eq:dwdmt\]](#eq:dwdmt){reference-type="eqref"
 reference="eq:dwdmt"}).](plot_balayage_tuner.png){#fig:balayage_tuner
 width="0.85\\linewidth"}
+
+#### Le profil de balistique interne reproduit désormais $\tau_v$.
+
+Le profil « burnout » (accélération constante sur une fraction
+$\phi = 0{,}35$ du canon, puis coast) réalise
+$\tau_v = -\partial t_b/\partial v_0 = (1+\phi)\,L/v^2 = 8{,}8\ \mu$s/(m/s),
+exactement la valeur mesurée par Kolbe et utilisée dans le critère
+[\[eq:dthetaopt\]](#eq:dthetaopt){reference-type="eqref"
+reference="eq:dthetaopt"}. L'ancien lag exponentiel
+$v = v_m(1-e^{-t/\tau})$ était *front-loaded* (toute l'accélération à la
+culasse, puis coast) : sa sensibilité plafonnait à
+$L/v^2 \approx 6{,}5\ \mu$s, soit 35 % trop faible, la balle sortant
+trop tôt ($t_b = 2{,}46$ contre $2{,}80$ ms). La chaîne cinématique de
+Kolbe --- chute naturelle, sensibilité du temps de sortie, taux requis
+--- est ainsi *entièrement* reproduite (script `kolbe_validation.jl` :
+$0{,}016 \times 375 = 6{,}0$ MOA/ms retrouvé à $1\,\%$).
+
+Ce qui demeure hors de portée est l'*amplitude absolue*. Au temps de
+sortie correct $t_b = 2{,}80$ ms, le modèle encastré donne
+$\dot\theta(L,t_b)$ du bon *signe* --- négatif pour le canon nu
+($\approx -1{,}1$ MOA/ms, bouche descendante, comme les $-9{,}4$ mesurés
+par Kolbe), ramené vers le positif par la masse de bouche ($+2{,}6$ à
+400 g) --- mais d'amplitude environ trois fois trop faible pour
+atteindre les $6{,}0$ MOA/ms sans amplitude de vibration
+invraisemblable. C'est le symptôme, déjà rencontré, de la *rotation de
+corps rigide* absente du modèle encastré, non un défaut du profil
+balistique. Il est d'ailleurs notable que la correction du profil
+*améliore* l'accord qualitatif : à l'ancien $t_b = 2{,}5$ ms le canon nu
+ressortait *montant* (mauvais signe) ; au temps correct il ressort
+*descendant*, conforme à Kolbe.
+
+Ce déficit d'amplitude est depuis *levé* par le modèle du fusil libre
+sur ses sacs (`harral_rifle_sweep.jl`, `kolbe_amplitude.jl`) : avec le
+moment de recul physiquement ancré
+($\int A_\text{bore}\,p\,dt = (1+\beta)\,m_p\,v$), le pic de
+$|\dot\theta|$ y atteint $\sim 5$ MOA/ms pour une hauteur d'âme d'un
+pouce, $\sim 10$ pour deux pouces --- l'ordre de grandeur de Kolbe, sans
+paramètre de calage. La rotation de corps rigide n'y contribue pourtant
+que $\sim 0{,}2$ MOA/ms : ce n'est pas elle qui fournit l'amplitude,
+mais le *whip* élastique qu'elle excite une fois la culasse libérée.
+Seul demeure hors de portée le calage *exact* de $\dot\theta(L,t_b)$ ---
+sa phase à la sortie --- qui dépend de la fréquence de whip et du temps
+de sortie réels, non publiés.
 
 Ces tracés illustrent une distinction essentielle pour le tireur : le
 tuner agit *principalement sur le point d'impact moyen* (via
@@ -803,6 +889,85 @@ $\dot\theta(L,t_b)$). Lorsque $t_b \ll T_1$, la fenêtre d'optimalité en
 $\dot\theta$ est large et plate ; le réglage du tuner sert alors surtout
 à compenser la dispersion de vitesse, le réglage du visage prenant en
 charge le décalage du POI.
+
+## Accord en position : le paramètre de réglage effectif {#sec:position}
+
+Le balayage de la figure [6](#fig:balayage_tuner){reference-type="ref"
+reference="fig:balayage_tuner"} porte sur la *masse* $m_t$, paramètre
+commode dans le modèle. Ce n'est pourtant pas la variable de réglage sur
+le terrain : la masse y est *fixée* (on monte un poids donné) et
+l'accord se fait en *vissant* le tuner plus ou moins loin en
+porte-à-faux devant la bouche, réglage continu compté en tours de
+filetage.
+
+Ce degré de liberté se modélise en déportant la masse du tuner d'une
+distance $d$ devant le nœud de bouche. Le couplage masse--rotation d'une
+masse déportée ajoute au couple de degrés de liberté $(y_L,\theta_L)$ la
+contribution $$\mathbf{M}_\text{add} =
+        \begin{bmatrix}
+            m_t & m_t d \\[2pt]
+            m_t d & m_t d^2 + J_\text{cm}
+        \end{bmatrix},
+        \label{eq:masse_deportee}$$ où $J_\text{cm}$ est l'inertie
+propre du tuner autour de son centre de masse ; à $d = 0$ on retrouve la
+masse ponctuelle du modèle précédent.
+
+![Accord en position à masse fixe, pour deux masses encadrant la
+fourchette réelle (100 et 200 g). En haut : $\dot\theta(L,t_b)$ en
+fonction du porte-à-faux $d$ ; la bande verte marque $\pm 1$ MOA/ms
+autour de la cible de Kolbe. Le porte-à-faux seul fait passer le taux
+angulaire de $+0{,}8$ à $+6{,}2$ MOA/ms (100 g) ou de $+1{,}8$ à
+$+5{,}9$ (200 g) : dans les deux cas la course couvre tout l'écart entre
+arme non compensée et cible. En bas : $f_1$ décroît avec $d$, la
+position décalant les mêmes fréquences modales que la
+masse.](plot_balayage_position.png){#fig:balayage_position
+width="0.85\\linewidth"}
+
+Trois résultats se dégagent. D'abord, *la position suffit à accorder* :
+nul besoin de changer de poids, la course du tuner traverse toute la
+plage utile. Ensuite, *le poids détermine où sur la course*, non la
+possibilité d'accorder : la cible est atteinte vers $d \approx 80$ mm à
+100 g et vers $d \approx 65$ mm à 200 g --- plus la masse est légère,
+plus le sweet spot est éloigné de la bouche. Enfin, *l'optimum est
+large*, et d'autant plus que la masse est élevée : la zone à moins de 1
+MOA/ms de la cible couvre $\sim 45$ mm de course à 100 g et $\sim 65$ mm
+à 200 g. Masse et position forment ainsi un unique *espace d'accord*, le
+poids fixant la courbe et la position accordant dessus.
+
+#### Ordres de grandeur des masses employées.
+
+Les poids annoncés par les fabricants situent la fourchette :
+
+::: center
+  Tuner                                              Poids annoncé                       Destination
+  ----------------------------- ------------------------------------------------------- --------------
+  PMA 7/8-32                                        4,2 oz (119 g)                        centerfire
+  Ezell PDT *light*                                  5 oz (142 g)                         centerfire
+  Ezell PDT standard                                 7 oz (198 g)                         centerfire
+  Harrell's Rimfire/Air                              8 oz (227 g)                          rimfire
+  Starik/Centra, tube carbone    $\sim$`<!-- -->`{=html}200 à 220 g (ensemble complet)   rimfire ISSF
+:::
+
+soit $\sim 115$ à 230 g pour un tuner de bouche. Ces chiffres ne
+désignent toutefois pas des objets comparables : chez Harrell's ou Ezell
+le corps entier constitue la masse, accordée en la vissant sur quelques
+millimètres de filetage ; le tube carbone Starik relève de
+l'architecture inverse, un tube léger dans lequel une petite masse
+coulisse sur plusieurs centimètres, de sorte que ses $\sim 200$ g
+d'ensemble ne correspondent pas à la masse mobile, non publiée. Les deux
+courbes de la figure [7](#fig:balayage_position){reference-type="ref"
+reference="fig:balayage_position"} encadrent ces deux régimes.
+
+#### Finesse du réglage.
+
+Les pas relevés sur un tuner Starik/Centra --- porte-poids par crans de
+10 mm, réglage fin à 5 tours pour 2,5 mm, soit un pas de 0,5 mm ---
+correspondent, sur la courbe de la
+figure [7](#fig:balayage_position){reference-type="ref"
+reference="fig:balayage_position"}, à $\sim 0{,}01$ MOA/ms par tour près
+de l'optimum (jusqu'à $\sim 0{,}04$ dans la partie raide). La largeur de
+l'optimum, $\sim 90$ tours, explique qu'un *ladder tune* converge sans
+exiger une précision au tour près.
 
 # Conclusions pratiques pour le tireur {#sec:conclusions}
 
@@ -1010,6 +1175,200 @@ recoil dynamics could be affected ) et ne l'a pas mesuré. En l'état des
 connaissances, la règle de prudence est donc : *accorder dans la
 position de tir*, et re-vérifier l'accord si l'on change de position ou
 de tenue.
+
+#### 11. Une recréation infructueuse de l'étude de Harral.
+
+L'analyse du point 9 a été rejouée dans le cadre MEF de ce document ---
+poutre d'Euler-Bernoulli à *section variable* reproduisant le contour
+*reverse taper* d'Esten, réponse transitoire Newmark-$\beta$, puis la
+formule de point d'impact de Harral (projection de bouche $+$ vitesse
+verticale $\times$ temps de vol $-$ chute). La recréation *échoue*, et
+le diagnostic éclaire les limites du modèle encastré. Trois causes ont
+été identifiées, dont deux corrigées.
+
+*(i) La projection de bouche de Harral n'est pas de la vibration, mais
+de la flèche statique* (corrigé). Sa page l'indique explicitement :
+ Gravity is applied and the stock deforms as well as the barrel sag. 
+Ses $-1{,}32''\to-2{,}42''$ décrivent un canon s'affaissant sous le
+poids croissant du tuner, avant même le départ du coup. Le script
+n'appliquait initialement aucune gravité ; il applique désormais le
+poids propre du canon et du tuner et démarre à l'équilibre statique
+$\mathbf{U}_0 = \mathbf{K}_a^{-1}\mathbf{F}_\text{grav}$, donnant
+$-1{,}13 / -1{,}41 / -1{,}61 / -2{,}02''$ contre
+$-1{,}32 / -1{,}72 / -1{,}96 / -2{,}42''$ chez Harral : même tendance et
+même ordre de grandeur *sans aucun calage*, l'écart résiduel
+correspondant à la crosse, que Harral modélise et que ce script ignore.
+
+*(ii) La calibration comparait une amplitude dynamique à un nombre
+statique* (corrigé). Caler le pic de l'oscillation sur
+$\approx 1{,}5''$, c'est-à-dire sur la flèche *statique* de Harral,
+gonflait l'amplitude d'environ un ordre de grandeur. La flèche statique
+étant désormais produite par la gravité, ce calage a disparu --- mais il
+faut en tirer la conséquence : *plus rien, dans les données publiées par
+Harral, ne contraint l'amplitude dynamique*, devenue un paramètre libre
+assumé.
+
+*(iii) Les conditions aux limites décrivent un autre système* (cause
+décisive, non résolue). Harral modélise le fusil entier, libre de
+reculer et de tourner :  The stock contacts the simulated sandbag rests
+with zero friction in the calculation. The rests are fixed in space.  Il
+s'agit d'un *appui unilatéral sans frottement* --- ni encastrement, ni
+arme flottante. Le modèle encastré supprime au contraire toute rotation
+d'ensemble, c'est-à-dire précisément le mécanisme dont procède la
+compensation positive (point 10). Il ne subsiste que la flexion
+élastique : le fondamental à 35 Hz est hors-jeu et l'angle de bouche
+oscille à $\sim 400$ Hz, de sorte que $t_b$ tombe sur une pente raide de
+cette oscillation rapide. La valeur qui s'y lit n'est pas une
+compensation mais un échantillonnage à un instant arbitraire, et la
+sortie ne peut être décalée pour rattraper la phase : à 315 m/s sur
+63 cm, le plancher absolu est de 2,0 ms.
+
+Ajuster l'amplitude ne corrige rien, comme l'a démontré l'ajout de la
+gravité. Avant correction, la dispersion calculée *décroissait* quand la
+bouche s'alourdissait ($0{,}148''$ nu $\to 0{,}085''$ à 16 oz) là où
+Harral la donne *croissante* ($0{,}091'' \to 0{,}183''$) : la conclusion
+physique opposée. Une fois l'amplitude ramenée à une valeur réaliste et
+la balistique interne corrigée (profil burnout, $t_b = 2{,}69$ ms),
+l'inversion disparaît et la dispersion se resserre autour de la valeur
+*non compensée* --- $0{,}159 / 0{,}168 / 0{,}170 / 0{,}169''$ pour les
+quatre masses, toutes voisines de $0{,}173''$, sans trace de la
+structure de Harral. Le système étant linéaire, ce résultat était
+prévisible : ce qui manque n'est pas un facteur d'échelle mais la
+*rotation de corps rigide* du fusil au recul. Il s'agit donc d'une
+lacune de modélisation, non d'une erreur d'implémentation --- lacune
+levée depuis par le modèle du fusil libre
+(section [5.5](#sec:validation_num){reference-type="ref"
+reference="sec:validation_num"}).
+
+*Précisions de méthode.* La ligne « bouche rigide » ($0{,}173''$)
+retrouvée au centième près ne constitue pas une validation : elle se
+calcule en soustrayant deux valeurs de chute que Harral publie lui-même,
+sans qu'aucune simulation n'intervienne. Son analyse modale ne peut pas
+davantage être reproduite, car *il ne publie aucune fréquence propre*.
+Enfin, un piège attend toute reprise de l'exercice : chez Harral,
+tableau et graphiques n'ont pas la même référence ---  The sag due to
+gravity was in the calculations, but subtracted out for the chart.  La
+flèche statique est retirée des *courbes*, non de la colonne *proj* du
+tableau.
+
+#### Synthèse des statuts.
+
+Les éléments réunis dans ce document sont de nature inégale et gagnent à
+être distingués : *mesuré* --- le principe de compensation positive et
+le critère de 6,0 MOA/ms (Kolbe, deux méthodes indépendantes
+concordantes) ; *calculé mais non validé* --- l'étude de Harral, d'où
+procède la mise en garde du point 9 ; *en échec* --- la recréation
+ci-dessus, faute de rotation d'ensemble ; *hors modèle* --- la vibration
+horizontale (point 7) et l'excitation rimfire au-delà du seul moment de
+recul (point 6).
+
+# Cas de l'arme à air précomprimée (PCP) {#sec:pcp}
+
+Les fabricants d'armes à air haut de gamme proposent des *harmonic
+tuners* de bouche. Ces dispositifs ont un effet, mais par un mécanisme
+distinct de celui développé dans ce document, et la distinction mérite
+d'être posée précisément car deux écoles d'accord coexistent.
+
+#### La compensation positive est largement hors-jeu.
+
+Tout le formalisme précédent repose sur le *recul* : c'est lui qui fait
+pivoter l'arme autour de son centre de gravité et imprime le moment
+excitateur
+[\[eq:moment_recul\]](#eq:moment_recul){reference-type="eqref"
+reference="eq:moment_recul"}. Or un PCP est quasi sans recul, certains
+modèles étant même conçus *recoilless*. Le terme d'excitation dominant
+s'effondre donc, et rien ne garantit plus que la bouche monte au taux
+requis par [\[eq:dthetaopt\]](#eq:dthetaopt){reference-type="eqref"
+reference="eq:dthetaopt"} : ce taux procédait précisément de la rotation
+de recul.
+
+#### Le mécanisme opérant est celui de la « bouche stationnaire ».
+
+::: center
+  École                         Condition à la sortie                      Effet                 Exige le recul
+  ----------------------- --------------------------------- ----------------------------------- ----------------
+  Compensation positive    $\dot\theta$ maximale, positive   masque la dispersion de vitesse ;        oui
+  (Kolbe, ce document)            (bouche montante)              spécifique à la distance       
+  Bouche stationnaire          $\dot\theta \approx 0$        rend l'angle de sortie insensible        non
+  (nœud)                      (point de rebroussement)             à la gigue sur $t_b$         
+:::
+
+La seconde condition ne dépend pas de la source d'excitation. Or le
+canon d'un PCP vibre malgré l'absence de recul, par la frappe du marteau
+sur la soupape, le souffle d'air et le passage du plomb (frottement,
+gravure, effet de charge mobile) --- ce dernier terme figurant déjà dans
+le modèle. Un poids de bouche décale les fréquences modales et déplace
+$t_b$ dans ce cycle de *whip*.
+
+À un extremum de $\theta$ on annule $\dot\theta$ mais non $\ddot\theta$
+: la dispersion résiduelle y est du *second ordre* en $\Delta t$,
+variant comme $\tfrac{1}{2}\ddot\theta\,\Delta t^2$. Elle est donc
+minimisée, non annulée --- différence de fond avec la compensation
+positive, qui *utilise* le terme du premier ordre $\dot\theta\,\Delta t$
+pour annuler la chute balistique là où la bouche stationnaire
+l'*élimine*. Deux confusions sont à écarter : viser un maximum de
+$\dot\theta$ (cible de la compensation positive, qui exige le recul) au
+lieu de $\dot\theta \approx 0$ ; et viser un extremum du *déplacement*
+$y(t)$ plutôt que de l'*angle* $\theta(t)$, alors que Kolbe a mesuré que
+la vitesse de translation de la bouche contribue négligeablement à la
+dispersion. Dans le transitoire réel, $\theta$ et $y$ culminent à des
+instants différents.
+
+#### Structure d'un simulateur.
+
+Contre-intuitivement, le PCP *éloigne* du schéma « fusil libre » de
+Harral. Ce schéma élaboré (recul libre, appuis unilatéraux, degrés de
+liberté de corps rigide) n'a qu'un objet : capturer la rotation
+d'ensemble entraînée par le recul. Ce terme étant négligeable sur un
+PCP, la lacune de l'encastrement devient sans effet : l'ossature
+encastrée est même plus conforme à ses propres hypothèses pour un PCP
+que pour la .22 LR pour laquelle elle a été écrite. L'essentiel du
+travail porte donc sur l'*excitation* : retirer le moment de recul,
+ajouter une impulsion marteau/soupape ainsi qu'une charge mobile
+réaliste, et viser $\dot\theta(L,t_b) \approx 0$.
+
+#### Résultats.
+
+Cette structure est implémentée dans `pcp_tuner.jl`. Elle exploite une
+propriété qui rend le calcul possible malgré l'excitation inconnue : le
+système étant linéaire, la *position* des sweet spots ($\dot\theta = 0$)
+ne dépend que de la réponse unitaire --- modes propres et temps de
+sortie ---, non de l'amplitude de l'excitation. On peut donc prédire *à
+quel réglage* la bouche devient stationnaire sans mesurer la frappe du
+marteau ; seule la *profondeur* du gain reste hors de portée.
+
+Le calcul corrige une idée reçue : on se représente volontiers un «
+peigne » de sweet spots rapprochés. Le *whip* oscille certes vite dans
+le temps ($\sim 250$--700 Hz), mais sa fréquence ne se décale que de
+$\sim 20\,\%$ quand on charge le tuner de 100 g, de sorte que la phase à
+$t_b$ ne balaie qu'une fraction de cycle. Sur un canon .22 airgun
+représentatif, $\dot\theta(t_b)$ ne croise zéro qu'une fois dans la
+plage réaliste. Comme en .22 LR
+(section [5.6](#sec:position){reference-type="ref"
+reference="sec:position"}), le réglage effectif est la *position* : à
+masse fixe, $\dot\theta(t_b)$ traverse zéro à un porte-à-faux précis ---
+vers 63 mm pour 70 g, avec un optimum large ($\sim 18$ mm). La masse
+déplace ce sweet spot le long de la course suivant une courbe d'accord
+régulière (89 mm à 40 g, 63 mm à 70 g, 44 mm à 100 g) : plus le poids
+est lourd, plus le sweet spot se rapproche de la bouche.
+
+![Courbe d'accord d'un tuner PCP .22 : porte-à-faux du sweet spot
+(bouche stationnaire, $\dot\theta = 0$) en fonction de la masse fixée.
+Ces valeurs sont propres au canon simulé ; c'est la *forme* de la
+relation qui est robuste, non les chiffres au
+millimètre.](plot_pcp_courbe_accord.png){#fig:pcp_accord
+width="0.85\\linewidth"}
+
+#### Réserves.
+
+La variable dominante de précision d'un PCP est ailleurs : régularité du
+régulateur et appariement plomb/vitesse. Un tuner ne rattrape ni un
+régulateur mal réglé, ni de mauvais plombs, et sur un PCP bien régulé il
+reste peu de dispersion de vitesse à masquer. Beaucoup de gains
+attribués au tuner viennent par ailleurs d'un changement de plomb testé
+simultanément --- même piège méthodologique qu'en .22 LR. Enfin, la
+profondeur du bénéfice dépend de l'amplitude d'excitation, non mesurée :
+le modèle donne le *où*, non le *combien*.
 
 # Bibliographie {#bibliographie .unnumbered}
 

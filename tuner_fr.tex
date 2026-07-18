@@ -38,6 +38,13 @@
 
 	À titre d'ordre de grandeur, la chute vaut $h = \tfrac12\,g\,(D/\bar v)^2$ pour une distance $D$ et une vitesse initiale $\bar v$, si bien qu'un écart de vitesse $\Delta v$ décale l'impact de $|\Delta h| \approx g\,D^2\,\Delta v / \bar v^3$. Pour une .22~LR de match ($\bar v \approx 330$~m/s) tirée à $D = 50$~m, une dispersion de $30$~fps ($\Delta v \approx 9$~m/s) produit ainsi, par le seul temps de vol, une traînée verticale d'environ $6$~mm --- largement de quoi ruiner un groupement de match. C'est précisément cette dispersion que la compensation positive vise à annuler.
 
+	\paragraph{Ce que cela borne, et pourquoi le gain est contre-intuitif.} Ce terme est le \emph{seul} qu'un tuner accordé retire : la dispersion propre de la munition, le vent et le tireur restent intacts. En supposant ces sources indépendantes, elles se composent en somme quadratique, de sorte qu'un groupement $G$ ne peut au mieux se réduire qu'à
+	\begin{equation}
+		G_\text{res} \;=\; \sqrt{G^2 - \Delta h^2}, \qquad \Delta h \approx g\,D^2\,\Delta v / \bar v^3.
+		\label{eq:gres}
+	\end{equation}
+	Cette borne ne fait intervenir \emph{aucune} grandeur vibratoire --- ni amplitude, ni fréquence, ni masse de tuner --- et se calcule donc à partir de trois chiffres que le tireur mesure déjà : sa distance, son écart de vitesse au chronographe et son groupement habituel. C'est, à ce titre, la prédiction la plus robuste de ce document, là où les valeurs absolues de $\dot\theta$ des sections~\ref{sec:validation_num} et suivantes restent des ordres de grandeur calibrés. Sa conséquence est contre-intuitive : \emph{plus le tireur est bon, plus un tuner rapporte}. En .22~LR à 50~m avec $\Delta v = 10$~m/s, les écarts de vitesse pèsent $7{,}6$~mm ; sur un groupement de $20$~mm, les supprimer ne fait gagner que $8\,\%$, tandis que sur un groupement de $8$~mm le gain atteint $70\,\%$. Le tuner est ainsi structurellement un outil de \emph{benchrest}, ce qui explique aussi que les témoignages divergent tant d'un tireur à l'autre. Cette borne ne vaut toutefois que pour les armes à recul (cf.\ section~\ref{sec:pcp}).
+
 	\subsection{Le canon vibre comme un diapason}
 
 	En réalité, lorsque le coup part, le canon ne reste pas immobile : il se met à vibrer. L'explosion de la poudre, le recul de l'arme, la course du projectile dans le tube et son frottement contre les rayures excitent des oscillations transversales — c'est-à-dire de bas en haut et de gauche à droite — qui font bouger la bouche du canon de quelques centièmes de degré, à la manière d'un diapason qui sonne après un choc. Ces vibrations durent plusieurs dizaines de millisecondes, bien au-delà du temps que met la balle pour parcourir le canon (typiquement 2 à 3 millisecondes).

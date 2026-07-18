@@ -36,6 +36,15 @@
 
 	A slower bullet spends more time in flight to reach the target and therefore suffers gravitational acceleration for longer: it drops more. Mechanically, on target, this translates into a lower impact than a faster bullet fired with the same setting. If the barrel were a perfectly rigid and stationary tube, the velocity spread of the cartridges would inevitably translate into a \emph{vertical streak} on the target: fast bullets at the top, slow ones at the bottom.
 
+	As an order of magnitude, the drop is $h = \tfrac12\,g\,(D/\bar v)^2$ for a distance $D$ and a muzzle velocity $\bar v$, so that a velocity spread $\Delta v$ shifts the impact by $|\Delta h| \approx g\,D^2\,\Delta v / \bar v^3$. For a match .22~LR ($\bar v \approx 330$~m/s) fired at $D = 50$~m, a spread of $30$~fps ($\Delta v \approx 9$~m/s) therefore produces, through time of flight alone, a vertical streak of about $6$~mm --- easily enough to ruin a match group. It is precisely this spread that positive compensation sets out to cancel.
+
+	\paragraph{What this bounds, and why the gain is counter-intuitive.} This term is the \emph{only} one a tuned tuner removes: the ammunition's own dispersion, the wind and the shooter are left untouched. Assuming these sources independent, they combine in quadrature, so that a group $G$ can at best shrink to
+	\begin{equation}
+		G_\text{res} \;=\; \sqrt{G^2 - \Delta h^2}, \qquad \Delta h \approx g\,D^2\,\Delta v / \bar v^3.
+		\label{eq:gres}
+	\end{equation}
+	This bound involves \emph{no} vibratory quantity --- neither amplitude, nor frequency, nor tuner mass --- and is therefore computed from three figures the shooter already measures: distance, chronograph velocity spread and habitual group size. It is, on that count, the most robust prediction in this document, whereas the absolute values of $\dot\theta$ in section~\ref{sec:validation_num} and beyond remain calibrated orders of magnitude. Its consequence is counter-intuitive: \emph{the better the shooter, the more a tuner returns}. In .22~LR at 50~m with $\Delta v = 10$~m/s, velocity spread accounts for $7.6$~mm; on a $20$~mm group, removing it gains only $8\,\%$, whereas on an $8$~mm group the gain reaches $70\,\%$. The tuner is thus structurally a \emph{benchrest} tool, which also explains why reports diverge so widely from one shooter to the next. This bound holds only for recoiling firearms, however (cf.\ section~\ref{sec:pcp}).
+
 	\subsection{The barrel vibrates like a tuning fork}
 
 	In reality, when the shot is fired, the barrel does not stay still: it begins to vibrate. The powder explosion, the recoil of the firearm, the projectile's travel through the bore and its friction against the rifling all excite transverse oscillations --- that is, up-and-down and side-to-side --- that move the muzzle by a few hundredths of a degree, in the manner of a tuning fork ringing after being struck. These vibrations last several tens of milliseconds, well beyond the time it takes for the bullet to travel through the barrel (typically 2 to 3 milliseconds).
