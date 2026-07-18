@@ -595,6 +595,49 @@
 
 	Ces tracés illustrent une distinction essentielle pour le tireur : le tuner agit \emph{principalement sur le point d'impact moyen} (via $\theta(L,t_b)$) et \emph{secondairement sur la dispersion verticale} (via $\dot\theta(L,t_b)$). Lorsque $t_b \ll T_1$, la fenêtre d'optimalité en $\dot\theta$ est large et plate ; le réglage du tuner sert alors surtout à compenser la dispersion de vitesse, le réglage du visage prenant en charge le décalage du POI.
 
+	\subsection{Accord en position : le paramètre de réglage effectif}
+	\label{sec:position}
+
+	Le balayage de la figure~\ref{fig:balayage_tuner} porte sur la \emph{masse} $m_t$, paramètre commode dans le modèle. Ce n'est pourtant pas la variable de réglage sur le terrain : la masse y est \emph{fixée} (on monte un poids donné) et l'accord se fait en \emph{vissant} le tuner plus ou moins loin en porte-à-faux devant la bouche, réglage continu compté en tours de filetage.
+
+	Ce degré de liberté se modélise en déportant la masse du tuner d'une distance $d$ devant le n\oe ud de bouche. Le couplage masse--rotation d'une masse déportée ajoute au couple de degrés de liberté $(y_L,\theta_L)$ la contribution
+	\begin{equation}
+		\mathbf{M}_\text{add} =
+		\begin{bmatrix}
+			m_t & m_t d \\[2pt]
+			m_t d & m_t d^2 + J_\text{cm}
+		\end{bmatrix},
+		\label{eq:masse_deportee}
+	\end{equation}
+	où $J_\text{cm}$ est l'inertie propre du tuner autour de son centre de masse ; à $d = 0$ on retrouve la masse ponctuelle du modèle précédent.
+
+	\begin{figure}[!htb]
+		\centering
+		\includegraphics[width=0.85\linewidth]{plot_balayage_position.png}
+		\caption{Accord en position à masse fixe, pour deux masses encadrant la fourchette réelle (100 et 200\,g). En haut : $\dot\theta(L,t_b)$ en fonction du porte-à-faux $d$ ; la bande verte marque $\pm 1$ MOA/ms autour de la cible de Kolbe. Le porte-à-faux seul fait passer le taux angulaire de $+0{,}8$ à $+6{,}2$ MOA/ms (100\,g) ou de $+1{,}8$ à $+5{,}9$ (200\,g) : dans les deux cas la course couvre tout l'écart entre arme non compensée et cible. En bas : $f_1$ décroît avec $d$, la position décalant les mêmes fréquences modales que la masse.}
+		\label{fig:balayage_position}
+	\end{figure}
+
+	Trois résultats se dégagent. D'abord, \emph{la position suffit à accorder} : nul besoin de changer de poids, la course du tuner traverse toute la plage utile. Ensuite, \emph{le poids détermine où sur la course}, non la possibilité d'accorder : la cible est atteinte vers $d \approx 80$~mm à 100\,g et vers $d \approx 65$~mm à 200\,g --- plus la masse est légère, plus le sweet spot est éloigné de la bouche. Enfin, \emph{l'optimum est large}, et d'autant plus que la masse est élevée : la zone à moins de 1 MOA/ms de la cible couvre $\sim 45$~mm de course à 100\,g et $\sim 65$~mm à 200\,g. Masse et position forment ainsi un unique \emph{espace d'accord}, le poids fixant la courbe et la position accordant dessus.
+
+	\paragraph{Ordres de grandeur des masses employées.} Les poids annoncés par les fabricants situent la fourchette :
+	\begin{center}
+	\begin{tabular}{lcc}
+		\toprule
+		Tuner & Poids annoncé & Destination \\
+		\midrule
+		PMA 7/8-32 & 4,2 oz (119 g) & centerfire \\
+		Ezell PDT \emph{light} & 5 oz (142 g) & centerfire \\
+		Ezell PDT standard & 7 oz (198 g) & centerfire \\
+		Harrell's Rimfire/Air & 8 oz (227 g) & rimfire \\
+		Starik/Centra, tube carbone & $\sim$200 à 220 g (ensemble complet) & rimfire ISSF \\
+		\bottomrule
+	\end{tabular}
+	\end{center}
+	soit $\sim 115$ à 230~g pour un tuner de bouche. Ces chiffres ne désignent toutefois pas des objets comparables : chez Harrell's ou Ezell le corps entier constitue la masse, accordée en la vissant sur quelques millimètres de filetage ; le tube carbone Starik relève de l'architecture inverse, un tube léger dans lequel une petite masse coulisse sur plusieurs centimètres, de sorte que ses $\sim 200$~g d'ensemble ne correspondent pas à la masse mobile, non publiée. Les deux courbes de la figure~\ref{fig:balayage_position} encadrent ces deux régimes.
+
+	\paragraph{Finesse du réglage.} Les pas relevés sur un tuner Starik/Centra --- porte-poids par crans de 10~mm, réglage fin à 5 tours pour 2,5~mm, soit un pas de 0,5~mm --- correspondent, sur la courbe de la figure~\ref{fig:balayage_position}, à $\sim 0{,}01$ MOA/ms par tour près de l'optimum (jusqu'à $\sim 0{,}04$ dans la partie raide). La largeur de l'optimum, $\sim 90$ tours, explique qu'un \emph{ladder tune} converge sans exiger une précision au tour près.
+
 	\section{Conclusions pratiques pour le tireur}
 	\label{sec:conclusions}
 
@@ -621,6 +664,46 @@
 	\emph{Réserve sur cette mise en garde.} Tout ce qui précède repose sur une source \emph{unique et purement numérique}. Kolbe~\cite{KolbeSim} — qui, lui, a mesuré — juge ce travail non confirmé : \og\,His work has lacked the experimental confirmation needed to verify his computer modelling, however.\,\fg{} Harral ne publie ni les données de son arme (un seul chiffre : 10,5~lb), ni ses fréquences propres, ni son amortissement. Le résultat reste plausible et cohérent avec le formalisme, mais doit être lu comme une \emph{prédiction de simulation non validée}, non comme un fait mesuré.
 
 	\paragraph{10. À l'étau ou à l'épaule ? La condition d'appui \emph{est} le mécanisme.} La question la plus fréquente en pratique — faut-il accorder l'arme serrée dans un étau, pour « éliminer le facteur humain » ? — appelle une réponse tranchée : \emph{non}, et pas pour une raison de réalisme, mais parce qu'un étau rigide \emph{supprime le phénomène même que l'on cherche à régler}. Le moment excitateur \eqref{eq:moment_recul} n'existe que parce que l'arme \emph{recule et pivote autour de son centre de gravité} (section~\ref{sec:excitation}) ; bloquer rigidement la base annule ce terme, et il ne subsiste que la flexion élastique du tube, qui ne produit \emph{aucune} compensation. Le banc de Kolbe lui-même était un étau — mais il précise qu'il n'était pas rigide : \og\,The relatively thin base plate flexed under recoil and allowed the barrel clamp to rotate backwards, resulting in an upwards vertical muzzle flip.\,\fg{} Un serrage réellement rigide n'aurait rien montré. Pour le \emph{benchrest}, la question est close : le tir au sac est, selon Kolbe, \og\,a fair approximation\,\fg{} du recul libre postulé par le modèle. Pour le \emph{tir épaulé ou couché}, en revanche, épauler ajoute de la masse effective et contraint la rotation : puisque l'amplitude varie comme $h_\text{cg}/m_r$ \eqref{eq:hoffset_phys}, un accord établi en recul libre n'a aucune raison d'être optimal épaulé. Kolbe reste prudent (\og\,if a small calibre rifle is gripped tightly or pulled hard into the shoulder then the recoil dynamics could be affected\,\fg{}) et ne l'a pas mesuré. En l'état des connaissances, la règle de prudence est donc : \emph{accorder dans la position de tir}, et re-vérifier l'accord si l'on change de position ou de tenue.
+
+	\section{Cas de l'arme à air précomprimée (PCP)}
+	\label{sec:pcp}
+
+	Les fabricants d'armes à air haut de gamme proposent des \emph{harmonic tuners} de bouche. Ces dispositifs ont un effet, mais par un mécanisme distinct de celui développé dans ce document, et la distinction mérite d'être posée précisément car deux écoles d'accord coexistent.
+
+	\paragraph{La compensation positive est largement hors-jeu.} Tout le formalisme précédent repose sur le \emph{recul} : c'est lui qui fait pivoter l'arme autour de son centre de gravité et imprime le moment excitateur \eqref{eq:moment_recul}. Or un PCP est quasi sans recul, certains modèles étant même conçus \emph{recoilless}. Le terme d'excitation dominant s'effondre donc, et rien ne garantit plus que la bouche monte au taux requis par \eqref{eq:dthetaopt} : ce taux procédait précisément de la rotation de recul.
+
+	\paragraph{Le mécanisme opérant est celui de la « bouche stationnaire ».}
+	\begin{center}
+	\begin{tabular}{lccc}
+		\toprule
+		École & Condition à la sortie & Effet & Exige le recul \\
+		\midrule
+		Compensation positive & $\dot\theta$ maximale, positive & masque la dispersion de vitesse ; & oui \\
+		(Kolbe, ce document) & (bouche montante) & spécifique à la distance & \\
+		Bouche stationnaire & $\dot\theta \approx 0$ & rend l'angle de sortie insensible & non \\
+		(n\oe ud) & (point de rebroussement) & à la gigue sur $t_b$ & \\
+		\bottomrule
+	\end{tabular}
+	\end{center}
+
+	La seconde condition ne dépend pas de la source d'excitation. Or le canon d'un PCP vibre malgré l'absence de recul, par la frappe du marteau sur la soupape, le souffle d'air et le passage du plomb (frottement, gravure, effet de charge mobile) --- ce dernier terme figurant déjà dans le modèle. Un poids de bouche décale les fréquences modales et déplace $t_b$ dans ce cycle de \emph{whip}.
+
+	À un extremum de $\theta$ on annule $\dot\theta$ mais non $\ddot\theta$ : la dispersion résiduelle y est du \emph{second ordre} en $\Delta t$, variant comme $\tfrac{1}{2}\ddot\theta\,\Delta t^2$. Elle est donc minimisée, non annulée --- différence de fond avec la compensation positive, qui \emph{utilise} le terme du premier ordre $\dot\theta\,\Delta t$ pour annuler la chute balistique là où la bouche stationnaire l'\emph{élimine}. Deux confusions sont à écarter : viser un maximum de $\dot\theta$ (cible de la compensation positive, qui exige le recul) au lieu de $\dot\theta \approx 0$ ; et viser un extremum du \emph{déplacement} $y(t)$ plutôt que de l'\emph{angle} $\theta(t)$, alors que Kolbe a mesuré que la vitesse de translation de la bouche contribue négligeablement à la dispersion. Dans le transitoire réel, $\theta$ et $y$ culminent à des instants différents.
+
+	\paragraph{Structure d'un simulateur.} Contre-intuitivement, le PCP \emph{éloigne} du schéma « fusil libre » de Harral. Ce schéma élaboré (recul libre, appuis unilatéraux, degrés de liberté de corps rigide) n'a qu'un objet : capturer la rotation d'ensemble entraînée par le recul. Ce terme étant négligeable sur un PCP, la lacune de l'encastrement devient sans effet : l'ossature encastrée est même plus conforme à ses propres hypothèses pour un PCP que pour la .22~LR pour laquelle elle a été écrite. L'essentiel du travail porte donc sur l'\emph{excitation} : retirer le moment de recul, ajouter une impulsion marteau/soupape ainsi qu'une charge mobile réaliste, et viser $\dot\theta(L,t_b) \approx 0$.
+
+	\paragraph{Résultats.} Cette structure est implémentée dans \texttt{pcp\_tuner.jl}. Elle exploite une propriété qui rend le calcul possible malgré l'excitation inconnue : le système étant linéaire, la \emph{position} des sweet spots ($\dot\theta = 0$) ne dépend que de la réponse unitaire --- modes propres et temps de sortie ---, non de l'amplitude de l'excitation. On peut donc prédire \emph{à quel réglage} la bouche devient stationnaire sans mesurer la frappe du marteau ; seule la \emph{profondeur} du gain reste hors de portée.
+
+	Le calcul corrige une idée reçue : on se représente volontiers un « peigne » de sweet spots rapprochés. Le \emph{whip} oscille certes vite dans le temps ($\sim 250$--700~Hz), mais sa fréquence ne se décale que de $\sim 20\,\%$ quand on charge le tuner de 100~g, de sorte que la phase à $t_b$ ne balaie qu'une fraction de cycle. Sur un canon .22 airgun représentatif, $\dot\theta(t_b)$ ne croise zéro qu'une fois dans la plage réaliste. Comme en .22~LR (section~\ref{sec:position}), le réglage effectif est la \emph{position} : à masse fixe, $\dot\theta(t_b)$ traverse zéro à un porte-à-faux précis --- vers 63~mm pour 70~g, avec un optimum large ($\sim 18$~mm). La masse déplace ce sweet spot le long de la course suivant une courbe d'accord régulière (89~mm à 40~g, 63~mm à 70~g, 44~mm à 100~g) : plus le poids est lourd, plus le sweet spot se rapproche de la bouche.
+
+	\begin{figure}[!htb]
+		\centering
+		\includegraphics[width=0.85\linewidth]{plot_pcp_courbe_accord.png}
+		\caption{Courbe d'accord d'un tuner PCP .22 : porte-à-faux du sweet spot (bouche stationnaire, $\dot\theta = 0$) en fonction de la masse fixée. Ces valeurs sont propres au canon simulé ; c'est la \emph{forme} de la relation qui est robuste, non les chiffres au millimètre.}
+		\label{fig:pcp_accord}
+	\end{figure}
+
+	\paragraph{Réserves.} La variable dominante de précision d'un PCP est ailleurs : régularité du régulateur et appariement plomb/vitesse. Un tuner ne rattrape ni un régulateur mal réglé, ni de mauvais plombs, et sur un PCP bien régulé il reste peu de dispersion de vitesse à masquer. Beaucoup de gains attribués au tuner viennent par ailleurs d'un changement de plomb testé simultanément --- même piège méthodologique qu'en .22~LR. Enfin, la profondeur du bénéfice dépend de l'amplitude d'excitation, non mesurée : le modèle donne le \emph{où}, non le \emph{combien}.
 
 	\section*{Bibliographie}
 

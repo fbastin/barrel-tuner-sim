@@ -593,6 +593,49 @@
 
 	These plots illustrate a distinction essential for the shooter: the tuner acts \emph{primarily on the mean point of impact} (via $\theta(L,t_b)$) and \emph{secondarily on the vertical dispersion} (via $\dot\theta(L,t_b)$). When $t_b \ll T_1$, the optimality window in $\dot\theta$ is wide and flat; the tuner adjustment then mainly serves to compensate for the velocity spread, while the sight adjustment takes care of the POI shift.
 
+	\subsection{Tuning by position: the effective adjustment parameter}
+	\label{sec:position}
+
+	The sweep in figure~\ref{fig:balayage_tuner} varies the \emph{mass} $m_t$, a convenient parameter in the model. It is not, however, the adjustment variable used in the field: there the mass is \emph{fixed} (a given weight is fitted) and tuning is done by \emph{screwing} the tuner further out or in, overhanging ahead of the muzzle --- a continuous adjustment counted in thread turns.
+
+	This degree of freedom is modelled by offsetting the tuner mass a distance $d$ ahead of the muzzle node. The mass--rotation coupling of an offset mass adds to the degree-of-freedom pair $(y_L,\theta_L)$ the contribution
+	\begin{equation}
+		\mathbf{M}_\text{add} =
+		\begin{bmatrix}
+			m_t & m_t d \\[2pt]
+			m_t d & m_t d^2 + J_\text{cm}
+		\end{bmatrix},
+		\label{eq:masse_deportee}
+	\end{equation}
+	where $J_\text{cm}$ is the tuner's own inertia about its centre of mass; at $d = 0$ the point mass of the previous model is recovered.
+
+	\begin{figure}[!htb]
+		\centering
+		\includegraphics[width=0.85\linewidth]{plot_balayage_position.png}
+		\caption{Tuning by position at fixed mass, for two masses bracketing the real range (100 and 200\,g). Top: $\dot\theta(L,t_b)$ against the overhang $d$; the green band marks $\pm 1$ MOA/ms around Kolbe's target. The overhang alone moves the angular rate from $+0.8$ to $+6.2$ MOA/ms (100\,g) or from $+1.8$ to $+5.9$ (200\,g): in both cases the travel spans the entire gap between an uncompensated rifle and the target. Bottom: $f_1$ decreases with $d$, position shifting the same modal frequencies as mass does.}
+		\label{fig:balayage_position}
+	\end{figure}
+
+	Three results emerge. First, \emph{position alone suffices to tune}: there is no need to change weights, as the tuner travel spans the whole useful range. Second, \emph{the weight determines where along the travel}, not whether tuning is possible: the target is reached near $d \approx 80$~mm at 100\,g and near $d \approx 65$~mm at 200\,g --- the lighter the mass, the further the sweet spot from the muzzle. Third, \emph{the optimum is broad}, and the more so the heavier the mass: the region within 1 MOA/ms of the target spans $\sim 45$~mm of travel at 100\,g and $\sim 65$~mm at 200\,g. Mass and position thus form a single \emph{tuning space}, the weight fixing the curve and the position tuning along it.
+
+	\paragraph{Typical masses.} Manufacturers' published weights bracket the range:
+	\begin{center}
+	\begin{tabular}{lcc}
+		\toprule
+		Tuner & Published weight & Intended use \\
+		\midrule
+		PMA 7/8-32 & 4.2 oz (119 g) & centrefire \\
+		Ezell PDT \emph{light} & 5 oz (142 g) & centrefire \\
+		Ezell PDT standard & 7 oz (198 g) & centrefire \\
+		Harrell's Rimfire/Air & 8 oz (227 g) & rimfire \\
+		Starik/Centra carbon tube & $\sim$200 to 220 g (complete assembly) & rimfire ISSF \\
+		\bottomrule
+	\end{tabular}
+	\end{center}
+	that is, $\sim 115$ to 230~g for a muzzle tuner. These figures do not, however, describe comparable objects: with Harrell's or Ezell the entire body constitutes the mass, tuned by screwing it over a few millimetres of thread; the Starik carbon tube is the opposite architecture, a light tube in which a small mass slides over several centimetres, so that its $\sim 200$~g assembly weight is not the moving mass, which is not published. The two curves in figure~\ref{fig:balayage_position} bracket both regimes.
+
+	\paragraph{Fineness of adjustment.} The steps recorded on a Starik/Centra tuner --- weight carrier in 10~mm increments, fine adjustment at 5 turns per 2.5~mm, i.e.\ a 0.5~mm pitch --- correspond, on the curve of figure~\ref{fig:balayage_position}, to $\sim 0.01$ MOA/ms per turn near the optimum (up to $\sim 0.04$ on the steep part). The width of the optimum, $\sim 90$ turns, explains why a \emph{ladder tune} converges without demanding turn-level precision.
+
 	\section{Practical conclusions for the shooter}
 	\label{sec:conclusions}
 
@@ -619,6 +662,46 @@
 	\emph{A caveat on this warning.} All of the above rests on a \emph{single, purely numerical} source. Kolbe~\cite{KolbeSim} --- who did measure --- considers that work unconfirmed: ``His work has lacked the experimental confirmation needed to verify his computer modelling, however.'' Harral publishes neither his rifle data (a single figure: 10.5~lb), nor his natural frequencies, nor his damping. The result remains plausible and consistent with the formalism, but must be read as an \emph{unvalidated simulation prediction}, not as a measured fact.
 
 	\paragraph{10. In a vice or at the shoulder? The support condition \emph{is} the mechanism.} The most common practical question --- should one tune with the rifle clamped in a vice, to ``remove the human factor''? --- calls for a blunt answer: \emph{no}, and not for reasons of realism, but because a rigid vice \emph{suppresses the very phenomenon one is trying to tune}. The driving moment \eqref{eq:moment_recul} exists only because the rifle \emph{recoils and pivots about its centre of gravity} (section~\ref{sec:excitation}); rigidly clamping the base cancels that term, leaving only elastic bending of the tube, which produces \emph{no} compensation at all. Kolbe's own test rig was a clamp --- but he points out that it was not rigid: ``The relatively thin base plate flexed under recoil and allowed the barrel clamp to rotate backwards, resulting in an upwards vertical muzzle flip.'' A truly rigid clamp would have shown nothing. For \emph{benchrest}, the matter is settled: shooting off bags is, in Kolbe's words, ``a fair approximation'' of the free recoil the model assumes. For \emph{shouldered or prone shooting}, however, shouldering adds effective mass and constrains the rotation: since the amplitude scales as $h_\text{cg}/m_r$ \eqref{eq:hoffset_phys}, a tune established in free recoil has no reason to remain optimal when shouldered. Kolbe is cautious (``if a small calibre rifle is gripped tightly or pulled hard into the shoulder then the recoil dynamics could be affected'') and did not measure it. On present knowledge the prudent rule is therefore: \emph{tune in the position you shoot}, and re-check the tune if you change position or hold.
+
+	\section{The pre-charged pneumatic (PCP) case}
+	\label{sec:pcp}
+
+	Manufacturers of high-end air rifles offer muzzle \emph{harmonic tuners}. These devices do have an effect, but through a mechanism distinct from the one developed in this document, and the distinction deserves to be stated precisely, as two schools of tuning coexist.
+
+	\paragraph{Positive compensation is largely out of play.} The whole formalism above rests on \emph{recoil}: it is recoil that rotates the rifle about its centre of gravity and imparts the driving moment \eqref{eq:moment_recul}. A PCP, however, is nearly recoilless, some models being designed as such. The dominant excitation term therefore collapses, and nothing guarantees any longer that the muzzle rises at the rate required by \eqref{eq:dthetaopt}: that rate derived precisely from the recoil rotation.
+
+	\paragraph{The operative mechanism is the ``stationary muzzle''.}
+	\begin{center}
+	\begin{tabular}{lccc}
+		\toprule
+		School & Condition at exit & Effect & Requires recoil \\
+		\midrule
+		Positive compensation & $\dot\theta$ maximal, positive & masks velocity spread; & yes \\
+		(Kolbe, this document) & (muzzle rising) & distance-specific & \\
+		Stationary muzzle & $\dot\theta \approx 0$ & makes the launch angle insensitive & no \\
+		(node) & (turning point) & to jitter in $t_b$ & \\
+		\bottomrule
+	\end{tabular}
+	\end{center}
+
+	The second condition does not depend on the excitation source. A PCP barrel does vibrate despite the absence of recoil, through the hammer strike on the valve, the air blast and the pellet's passage (friction, engraving, moving-load effect) --- this last term being already present in the model. A muzzle weight shifts the modal frequencies and moves $t_b$ within this whip cycle.
+
+	At an extremum of $\theta$, $\dot\theta$ vanishes but $\ddot\theta$ does not: the residual dispersion there is \emph{second order} in $\Delta t$, varying as $\tfrac{1}{2}\ddot\theta\,\Delta t^2$. It is therefore minimised, not cancelled --- the fundamental difference from positive compensation, which \emph{uses} the first-order term $\dot\theta\,\Delta t$ to cancel the ballistic drop where the stationary muzzle \emph{eliminates} it. Two confusions must be avoided: aiming at a maximum of $\dot\theta$ (the positive-compensation target, which requires recoil) instead of $\dot\theta \approx 0$; and aiming at an extremum of the \emph{displacement} $y(t)$ rather than of the \emph{angle} $\theta(t)$, when Kolbe measured that the muzzle's translational velocity contributes negligibly to dispersion. In the real transient, $\theta$ and $y$ peak at different instants.
+
+	\paragraph{Structure of a simulator.} Counter-intuitively, the PCP moves \emph{away} from Harral's ``free rifle'' scheme. That elaborate scheme (free recoil, unilateral supports, rigid-body degrees of freedom) serves one purpose: to capture the whole-rifle rotation driven by recoil. As this term is negligible on a PCP, the shortcoming of the clamped model becomes immaterial: the clamped framework is in fact closer to its own assumptions for a PCP than for the .22~LR for which it was written. The bulk of the work therefore concerns the \emph{excitation}: remove the recoil moment, add a hammer/valve impulse together with a realistic moving load, and target $\dot\theta(L,t_b) \approx 0$.
+
+	\paragraph{Results.} This structure is implemented in \texttt{pcp\_tuner.jl}. It exploits a property that makes the computation possible despite the unknown excitation: the system being linear, the \emph{location} of the sweet spots ($\dot\theta = 0$) depends only on the unit response --- mode shapes and exit time --- not on the excitation amplitude. One can therefore predict \emph{at which setting} the muzzle becomes stationary without measuring the hammer strike; only the \emph{depth} of the gain remains out of reach.
+
+	The computation corrects a common assumption: one readily pictures a ``comb'' of closely spaced sweet spots. The whip does oscillate rapidly in time ($\sim 250$--700~Hz), but its frequency shifts by only $\sim 20\,\%$ when the tuner is loaded with 100~g, so the phase at $t_b$ sweeps only a fraction of a cycle. On a representative .22 airgun barrel, $\dot\theta(t_b)$ crosses zero only once within the realistic range. As in .22~LR (section~\ref{sec:position}), the effective adjustment is \emph{position}: at fixed mass, $\dot\theta(t_b)$ crosses zero at a definite overhang --- near 63~mm for 70~g, with a broad optimum ($\sim 18$~mm). The mass shifts this sweet spot along the travel following a regular tuning curve (89~mm at 40~g, 63~mm at 70~g, 44~mm at 100~g): the heavier the weight, the closer the sweet spot to the muzzle.
+
+	\begin{figure}[!htb]
+		\centering
+		\includegraphics[width=0.85\linewidth]{plot_pcp_courbe_accord.png}
+		\caption{Tuning curve of a .22 PCP tuner: overhang of the sweet spot (stationary muzzle, $\dot\theta = 0$) as a function of the fixed mass. These values are specific to the simulated barrel; it is the \emph{shape} of the relation that is robust, not the millimetre figures.}
+		\label{fig:pcp_accord}
+	\end{figure}
+
+	\paragraph{Reservations.} The dominant accuracy variable on a PCP lies elsewhere: regulator consistency and pellet/velocity matching. A tuner compensates neither for a poorly set regulator nor for bad pellets, and on a well-regulated PCP little velocity spread remains to be masked. Many gains attributed to the tuner moreover stem from a pellet change tested at the same time --- the same methodological pitfall as in .22~LR. Finally, the depth of the benefit depends on the excitation amplitude, which is not measured: the model gives the \emph{where}, not the \emph{how much}.
 
 	\section*{Bibliography}
 
