@@ -109,7 +109,14 @@ end
 # -----------------------------------------------------------------------------
 # 4. ASSEMBLAGE + ENCASTREMENT + TUNER
 # -----------------------------------------------------------------------------
-function build_system(m_tuner, J_tuner)
+# d_overhang : porte-à-faux du centre de masse du tuner DEVANT la bouche (m).
+# C'est le vrai réglage de terrain — on visse le tuner plus ou moins loin, la
+# masse restant fixe. Le couplage masse/rotation d'une masse déportée s'écrit
+#     M_add = [m      m·d    ;
+#              m·d    m·d² + J]
+# sur le couple (y, θ) du nœud de bouche : à d = 0 on retrouve le cas classique
+# de la masse ponctuelle.
+function build_system(m_tuner, J_tuner; d_overhang = 0.0)
     Ke, Me = element_matrices(L_e, EI, ρA)
     K = zeros(ndof, ndof)
     M = zeros(ndof, ndof)
@@ -121,8 +128,11 @@ function build_system(m_tuner, J_tuner)
     active = 3:ndof
     Ka = K[active, active]
     Ma = copy(M[active, active])
+    d = d_overhang
     Ma[end-1, end-1] += m_tuner
-    Ma[end,   end]   += J_tuner
+    Ma[end-1, end  ] += m_tuner * d
+    Ma[end,   end-1] += m_tuner * d
+    Ma[end,   end  ] += m_tuner * d^2 + J_tuner
     return Ka, Ma
 end
 
@@ -252,11 +262,12 @@ end
 # 10. SIMULATION D'UN TIR (h_offset paramétrable)
 # -----------------------------------------------------------------------------
 function simulate_shot(m_tuner; J_tuner = J_tuner_0,
+                       d_overhang = 0.0,
                        Δt = 5e-6, t_end = 30e-3,
                        ζ1 = 0.005, ζ2 = 0.01,
                        h_offset = h_offset_default,
                        verbose = true)
-    Ka, Ma  = build_system(m_tuner, J_tuner)
+    Ka, Ma  = build_system(m_tuner, J_tuner; d_overhang = d_overhang)
     freqs, ωs, Φ = modal_analysis(Ka, Ma; n_modes = 5)
     Ca, _, _ = rayleigh_damping(Ma, Ka, ωs[1], ωs[2], ζ1, ζ2)
     kin     = projectile_kinematics(v_muzzle, L)
@@ -291,6 +302,7 @@ function simulate_shot(m_tuner; J_tuner = J_tuner_0,
 
     return (
         m_tuner    = m_tuner,
+        d_overhang = d_overhang,
         h_offset   = h_offset,
         freqs      = freqs,
         ωs         = ωs,
@@ -370,6 +382,43 @@ function tuner_sweep(m_range; θdot_target = θdot_optimum_MOAms, kwargs...)
 end
 
 # -----------------------------------------------------------------------------
+# 12 bis. BALAYAGE EN POSITION — LE VRAI RÉGLAGE DE TERRAIN
+#
+# Sur le terrain la masse du tuner est FIXE (on monte un poids) et l'accord se
+# fait en VISSANT le tuner plus ou moins loin en porte-à-faux devant la bouche.
+# Ce balayage reproduit donc la procédure réelle : à masse fixée, on scanne la
+# course et on cherche le porte-à-faux qui amène θ̇(t_b) sur la cible de
+# compensation positive (+6 MOA/ms, Kolbe), et non le zéro visé en PCP.
+# -----------------------------------------------------------------------------
+function position_sweep(d_range; m_tuner = m_tuner_0,
+                        θdot_target = θdot_optimum_MOAms, kwargs...)
+    @printf("\n========== Balayage en position (masse fixe %.0f g) ==========\n",
+            m_tuner * 1e3)
+    @printf("%12s | %9s | %14s | %14s | %10s\n",
+            "porte-à-faux", "f₁ (Hz)", "θ(L,t_b)(µrad)", "θ̇(L,t_b) MOA/ms", "|écart|")
+    println("-"^74)
+    results = Any[]
+    for d in d_range
+        res = simulate_shot(m_tuner; d_overhang = d, verbose = false, kwargs...)
+        @printf("%9.1f mm | %9.2f | %+14.2f | %+14.3f | %10.3f\n",
+                d * 1e3, res.freqs[1], res.θ_at_tb * 1e6,
+                res.θdot_MOAms, abs(res.θdot_MOAms - θdot_target))
+        push!(results, res)
+    end
+    println("-"^74)
+    ecarts = [abs(r.θdot_MOAms - θdot_target) for r in results]
+    idx = argmin(ecarts)
+    @printf("Optimum : porte-à-faux ≈ %.1f mm  →  f₁ = %.2f Hz, θ̇(t_b) = %+.3f MOA/ms (cible %.1f)\n",
+            results[idx].d_overhang * 1e3, results[idx].freqs[1],
+            results[idx].θdot_MOAms, θdot_target)
+    # Tolérance : plage de porte-à-faux restant à moins de 1 MOA/ms de la cible.
+    ok = [r.d_overhang * 1e3 for r in results if abs(r.θdot_MOAms - θdot_target) <= 1.0]
+    isempty(ok) || @printf("Optimum large : %.0f–%.0f mm à moins de 1 MOA/ms de la cible (%.0f mm de tolérance)\n",
+                           minimum(ok), maximum(ok), maximum(ok) - minimum(ok))
+    return results
+end
+
+# -----------------------------------------------------------------------------
 # 13. TRACÉS (Plots.jl)
 # -----------------------------------------------------------------------------
 function plot_shot(res; save_path = "")
@@ -403,6 +452,39 @@ function plot_shot(res; save_path = "")
     if !isempty(save_path)
         savefig(fig, save_path)
         println("→ Tracé du tir enregistré : $save_path")
+    end
+    return fig
+end
+
+function plot_position_sweep(results; save_path = "", θdot_target = θdot_optimum_MOAms)
+    ds       = [r.d_overhang * 1e3 for r in results]
+    θdot_arr = [r.θdot_MOAms       for r in results]
+    f1s      = [r.freqs[1]         for r in results]
+    m_g      = results[1].m_tuner * 1e3
+
+    # NB : le point de θ̇ ne s'affiche pas dans la police par défaut de GR ;
+    # on écrit « taux angulaire » en toutes lettres dans titres et libellés.
+    p1 = plot(ds, θdot_arr,
+              xlabel = "Porte-à-faux du tuner (mm)",
+              ylabel = "Taux angulaire à t_b (MOA/ms)",
+              title  = "Le réglage réel : taux angulaire de bouche vs position",
+              label  = @sprintf("Tuner %.0f g, à masse fixe", m_g),
+              lw = 2, marker = :circle, color = :darkorange, legend = :outertop)
+    hline!(p1, [θdot_target], color = :green, ls = :dot,
+           label = "Cible Kolbe (+$θdot_target MOA/ms)")
+    # Bande de tolérance : ±1 MOA/ms autour de la cible.
+    hspan!(p1, [θdot_target - 1, θdot_target + 1], color = :green, alpha = 0.10, label = "±1 MOA/ms")
+
+    p2 = plot(ds, f1s,
+              xlabel = "Porte-à-faux du tuner (mm)", ylabel = "f₁ (Hz)",
+              title  = "Fréquence fondamentale vs position",
+              lw = 2, marker = :circle, color = :steelblue, legend = false)
+
+    fig = plot(p1, p2, layout = (2, 1), size = (800, 640),
+               plot_title = @sprintf("Accord en position — masse fixe %.0f g (.22 LR)", m_g))
+    if save_path != ""
+        savefig(fig, save_path)
+        println("Figure sauvegardée : $save_path")
     end
     return fig
 end
@@ -520,10 +602,15 @@ println()
 result_sweep = tuner_sweep(0.0:0.025:0.4; h_offset = h_cal)
 println()
 
+# Étape C bis — Balayage en position, à masse fixe : LE réglage de terrain.
+result_pos = position_sweep(0.0:0.005:0.10; m_tuner = m_tuner_0, h_offset = h_cal)
+println()
+
 # Étape D — Tracés
 println("[D] Génération des tracés")
 println("-"^72)
 plot_shot(result_nom; save_path = "plot_tir_nominal.png")
+plot_position_sweep(result_pos; save_path = "plot_balayage_position.png")
 plot_sweep(result_sweep; save_path = "plot_balayage_tuner.png")
 plot_modes(result_nom; save_path = "plot_modes_propres.png", n_modes = 4)
 println()
