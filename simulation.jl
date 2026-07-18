@@ -456,32 +456,41 @@ function plot_shot(res; save_path = "")
     return fig
 end
 
-function plot_position_sweep(results; save_path = "", θdot_target = θdot_optimum_MOAms)
-    ds       = [r.d_overhang * 1e3 for r in results]
-    θdot_arr = [r.θdot_MOAms       for r in results]
-    f1s      = [r.freqs[1]         for r in results]
-    m_g      = results[1].m_tuner * 1e3
+# `sweeps` : un ou plusieurs balayages en position (un par masse de tuner).
+# Superposer deux masses encadre la fourchette réelle du .22 LR — cf. les poids
+# fabricants relevés dans la page wiki (~115 à 230 g).
+function plot_position_sweep(sweeps...; save_path = "", θdot_target = θdot_optimum_MOAms)
+    couleurs = [:darkorange, :purple, :teal]
 
     # NB : le point de θ̇ ne s'affiche pas dans la police par défaut de GR ;
     # on écrit « taux angulaire » en toutes lettres dans titres et libellés.
-    p1 = plot(ds, θdot_arr,
-              xlabel = "Porte-à-faux du tuner (mm)",
+    p1 = plot(xlabel = "Porte-à-faux du tuner (mm)",
               ylabel = "Taux angulaire à t_b (MOA/ms)",
               title  = "Le réglage réel : taux angulaire de bouche vs position",
-              label  = @sprintf("Tuner %.0f g, à masse fixe", m_g),
-              lw = 2, marker = :circle, color = :darkorange, legend = :outertop)
-    hline!(p1, [θdot_target], color = :green, ls = :dot,
-           label = "Cible Kolbe (+$θdot_target MOA/ms)")
-    # Bande de tolérance : ±1 MOA/ms autour de la cible.
-    hspan!(p1, [θdot_target - 1, θdot_target + 1], color = :green, alpha = 0.10, label = "±1 MOA/ms")
+              legend = :outertop)
+    # Bande de tolérance : ±1 MOA/ms autour de la cible (tracée en premier
+    # pour rester sous les courbes).
+    hspan!(p1, [θdot_target - 1, θdot_target + 1], color = :green, alpha = 0.10,
+           label = "Cible Kolbe ±1 MOA/ms")
+    hline!(p1, [θdot_target], color = :green, ls = :dot, label = "")
 
-    p2 = plot(ds, f1s,
-              xlabel = "Porte-à-faux du tuner (mm)", ylabel = "f₁ (Hz)",
-              title  = "Fréquence fondamentale vs position",
-              lw = 2, marker = :circle, color = :steelblue, legend = false)
+    p2 = plot(xlabel = "Porte-à-faux du tuner (mm)", ylabel = "f₁ (Hz)",
+              title = "Fréquence fondamentale vs position", legend = false)
 
-    fig = plot(p1, p2, layout = (2, 1), size = (800, 640),
-               plot_title = @sprintf("Accord en position — masse fixe %.0f g (.22 LR)", m_g))
+    for (k, results) in enumerate(sweeps)
+        ds  = [r.d_overhang * 1e3 for r in results]
+        m_g = results[1].m_tuner * 1e3
+        c   = couleurs[mod1(k, length(couleurs))]
+        plot!(p1, ds, [r.θdot_MOAms for r in results],
+              label = @sprintf("Tuner %.0f g", m_g),
+              lw = 2, marker = :circle, ms = 3, color = c)
+        plot!(p2, ds, [r.freqs[1] for r in results],
+              lw = 2, marker = :circle, ms = 3, color = c)
+    end
+
+    masses = join([@sprintf("%.0f", s[1].m_tuner * 1e3) for s in sweeps], " et ")
+    fig = plot(p1, p2, layout = (2, 1), size = (800, 660),
+               plot_title = "Accord en position, à masse fixe — $masses g (.22 LR)")
     if save_path != ""
         savefig(fig, save_path)
         println("Figure sauvegardée : $save_path")
@@ -603,19 +612,23 @@ result_sweep = tuner_sweep(0.0:0.025:0.4; h_offset = h_cal)
 println()
 
 # Étape C bis — Balayage en position, à masse fixe : LE réglage de terrain.
-# Masse mobile de 100 g : ordre de grandeur d'un tuner de bouche .22 LR. Repère
-# publié : un tube carbone Starik/Centra complet pèse ~200-220 g TUNER COMPRIS —
-# le fabricant ne publie pas la masse de la seule bague mobile, qui est donc
-# nettement inférieure à ce chiffre d'ensemble.
-const M_TUNER_POS = 0.100
-result_pos = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_POS, h_offset = h_cal)
+# Deux masses encadrant la fourchette réelle des tuners .22 LR, d'après les
+# poids fabricants : PMA 4,2 oz (119 g) et EC v2 ~4 oz en bas, Harrell's rimfire
+# 8 oz (227 g) en haut. Le tube carbone Starik/Centra — l'un des plus répandus —
+# pèse ~200-220 g ENSEMBLE COMPLET, sa bague mobile seule étant bien plus
+# légère : il relève donc du bas de la fourchette.
+const M_TUNER_LOW  = 0.100
+const M_TUNER_HIGH = 0.200
+result_pos_low  = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
+result_pos_high = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
 println()
 
 # Étape D — Tracés
 println("[D] Génération des tracés")
 println("-"^72)
 plot_shot(result_nom; save_path = "plot_tir_nominal.png")
-plot_position_sweep(result_pos; save_path = "plot_balayage_position.png")
+plot_position_sweep(result_pos_low, result_pos_high;
+                    save_path = "plot_balayage_position.png")
 plot_sweep(result_sweep; save_path = "plot_balayage_tuner.png")
 plot_modes(result_nom; save_path = "plot_modes_propres.png", n_modes = 4)
 println()
