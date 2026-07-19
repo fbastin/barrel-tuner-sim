@@ -288,7 +288,7 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
                      k_rest, h_bore, unilateral = true, ζ1 = 0.005, ζ2 = 0.005,
                      Δt = 2e-6, t_end = 3.0e-3,
                      p_of_t = nothing, x_of_t = nothing, t_b_override = nothing,
-                     d_overhang = 0.0)
+                     d_overhang = 0.0, return_state = false)
     S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest, d_overhang)
     xp = x_of_t === nothing ? projectile_pos(v_muzzle) : x_of_t
 
@@ -327,6 +327,13 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
     t_b = t_b_override === nothing ? exit_time(v_muzzle) : t_b_override
     ib  = argmin(abs.(ts .- t_b))
     const_MOAms = (180*60/π) * 1e-3        # rad/s → MOA/ms
+    if return_state
+        # Pour la décomposition modale : on rend l'état complet, les modes et la
+        # matrice de masse. Sert à savoir QUEL mode porte θ̇ à l'instant de sortie.
+        fs_all, ωs_all, Φ_all = modal_analysis(K_lin, S.M; n_modes = 40, want_modes = true)
+        return (ts = ts, U = U, V = V, ib = ib, dm = dm, M = S.M,
+                fs = fs_all, Φ = Φ_all, t_b = t_b, f1 = f_whip)
+    end
     return (θ_tb = U[dm+1, ib], ẏ_tb = V[dm, ib],
             θdot_tb   = V[dm+1, ib] * const_MOAms,          # taux angulaire à t_b, MOA/ms
             θdot_peak = maximum(abs.(V[dm+1, :])) * const_MOAms,

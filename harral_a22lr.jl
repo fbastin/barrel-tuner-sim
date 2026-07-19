@@ -188,7 +188,10 @@ end
 # -----------------------------------------------------------------------------
 # 6. MODES PROPRES
 # -----------------------------------------------------------------------------
-function modal_analysis(Ka, Ma; n_modes = 5)
+# `want_modes` : renvoie en plus les déformées, NORMALISÉES EN MASSE
+# (Φᵀ M Φ = I), sans quoi la projection modale d'une réponse n'a pas de sens.
+# Sert à identifier QUEL mode porte θ̇ à l'instant de sortie de la balle.
+function modal_analysis(Ka, Ma; n_modes = 5, want_modes = false)
     decomp = eigen(Ka, Ma)
     λ = real.(decomp.values); Φ = real.(decomp.vectors)
     keep = λ .> 1e-3
@@ -196,6 +199,13 @@ function modal_analysis(Ka, Ma; n_modes = 5)
     order = sortperm(λ); λ = λ[order]; Φ = Φ[:, order]
     ω = sqrt.(λ)
     nm = min(n_modes, length(ω))
+    if want_modes
+        Φn = Φ[:, 1:nm]
+        for k in 1:nm
+            Φn[:, k] ./= sqrt(Φn[:, k]' * Ma * Φn[:, k])
+        end
+        return ω[1:nm] ./ (2π), ω[1:nm], Φn
+    end
     return ω[1:nm] ./ (2π), ω[1:nm]
 end
 
