@@ -990,8 +990,16 @@ puis continue de monter jusqu'à $6{,}18$ : viser la valeur nominale
 s'arrête *avant* le maximum, à $131$ $\mu$rad du neutre au lieu de $16$.
 Le simulateur de variabilité (`variability.jl`) chiffre l'écart à un
 **facteur 3** sur la dispersion prédite ($0{,}70$ contre $0{,}23$ mm
-d'écart-type à 50 m), l'optimum se déplaçant à $105$ mm. Les $80$ mm
-avancés plus haut sont donc un *artefact de méthode*, non un optimum. Ce
+d'écart-type à 50 m), l'optimum se déplaçant à $100$--$120$ mm
+(fourchette et non cote : la position du nœud dépend de l'inertie propre
+du tuner, que le modèle fixe sans la justifier ; la dispersion atteinte
+au nœud, elle, reste $\sim 0{,}23$ mm quelle que soit cette inertie). Un
+tel porte-à-faux n'est réalisable qu'avec l'architecture à tube
+(Starik/Centra, tubes de 19 à 36 cm), non avec un corps vissé ; la
+flèche statique ajoutée est négligeable ($0{,}04$ mm) et la liaison
+demeure rigide, une masse de 100 g sur 10 cm de tube carbone résonnant
+vers 600 Hz, bien au-dessus du mode fondamental. Les $80$ mm avancés
+plus haut sont donc un *artefact de méthode*, non un optimum. Ce
 résultat conforte par ailleurs le *ladder tune* : le tireur qui balaie
 la course et retient le meilleur groupement trouve le nœud sans le
 calculer, là où viser un chiffre de taux angulaire peut l'en écarter.

@@ -41,8 +41,16 @@ const D_in      = 0.0056        # Diamètre intérieur (.22 LR)
 const E         = 200e9         # Module d'Young acier
 const ρ_steel   = 7850.0        # Masse volumique acier
 
-# Tuner (Kolbe : 200 g cylindrique à la bouche)
+# Tuner (Kolbe : 200 g à la bouche)
 const m_tuner_0 = 0.200
+# J_tuner_0 : inertie PROPRE du tuner autour de son centre de masse. La valeur
+# ci-dessous correspond à un rayon de giration de 5 cm à 200 g (7 cm à 100 g) —
+# c'est-à-dire un ENSEMBLE TUBE façon Starik/Centra (tubes de 19 à 36 cm), non
+# une bague compacte, pour laquelle on trouverait plutôt ~1e-5 à 7e-5.
+# Ce n'est pas neutre : dans build_system le terme vaut m·d² + J_tuner, et à
+# grand porte-à-faux J pèse jusqu'à ~30 % du total. La position du nœud s'en
+# ressent (100 mm à J = 5e-4, 120 mm à J = 1e-5), même si la dispersion
+# atteinte au nœud, elle, ne bouge pas (~0,23 mm). Cf. §6 du wiki.
 const J_tuner_0 = 5.0e-4
 
 # Projectile et balistique interne (.22 LR Match, Eley Tenex)

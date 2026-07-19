@@ -74,9 +74,10 @@ const SEED    = 20260718
 # h_offset = 0 (charge mobile seule). C'est ce qui rend le Monte-Carlo gratuit —
 # 2 résolutions de Newmark au lieu de N_SHOTS.
 # -----------------------------------------------------------------------------
-function response_split(m_tuner; d_overhang = 0.0, h_offset = H_OFFSET_EFF)
-    tot  = simulate_shot(m_tuner; d_overhang, h_offset, verbose = false)
-    proj = simulate_shot(m_tuner; d_overhang, h_offset = 0.0, verbose = false)
+function response_split(m_tuner; d_overhang = 0.0, h_offset = H_OFFSET_EFF,
+                        J_tuner = J_tuner_0)
+    tot  = simulate_shot(m_tuner; d_overhang, h_offset, J_tuner, verbose = false)
+    proj = simulate_shot(m_tuner; d_overhang, h_offset = 0.0, J_tuner, verbose = false)
     return (ts = tot.ts, θ_rec = tot.θ_L .- proj.θ_L, θ_proj = proj.θ_L)
 end
 
