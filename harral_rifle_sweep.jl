@@ -95,8 +95,18 @@ const N_FORE  = 8       # culasse → pointe d'avant-bras
 #   chaîne av.-bras: repart du nœud de culasse  (x = x_breech … x_breech+L_fore)
 # Les deux dernières sont PARALLÈLES : elles ne se touchent qu'à la culasse.
 # -----------------------------------------------------------------------------
-function rifle_topology(x_breech, L_fore)
-    nn = (N_STOCK + 1) + N_BAR + N_FORE
+# BRANCHE TUBE (ajoutée le 2026-07-19). Un tuner à tube n'est pas une masse
+# ponctuelle : c'est une poutre chaînée en avant de la bouche, dans laquelle une
+# masse coulisse. L'idéaliser en masse + inertie gonfle son effet d'un ordre de
+# grandeur (cf. flexible_tube.jl), parce qu'une masse rigide déportée transmet à
+# la bouche un moment `m·d·ÿ + (m d² + J)·θ̈` qu'un tube fléchissant ne transmet
+# pas — et dans la bande qui gouverne l'accord (2-3 kHz) il fléchit.
+# `L_tube = 0` restitue exactement le comportement antérieur.
+const N_TUBE_EL = 6
+
+function rifle_topology(x_breech, L_fore; L_tube = 0.0)
+    n_tube = L_tube > 0 ? N_TUBE_EL : 0
+    nn = (N_STOCK + 1) + N_BAR + N_FORE + n_tube
     xs = zeros(nn)
     for i in 1:(N_STOCK+1)
         xs[i] = (i-1) * x_breech / N_STOCK
@@ -122,8 +132,22 @@ function rifle_topology(x_breech, L_fore)
     for k in 1:N_FORE
         push!(els, (prev, off+k, L_fore/N_FORE, :fore)); prev = off+k
     end
+    i_muzzle = i_breech + N_BAR
+    i_tubetip = i_muzzle
+    if n_tube > 0
+        off_t = off + N_FORE
+        for k in 1:n_tube
+            xs[off_t + k] = x_breech + L + k * L_tube / n_tube
+        end
+        prev = i_muzzle
+        for k in 1:n_tube
+            push!(els, (prev, off_t+k, L_tube/n_tube, :tube)); prev = off_t+k
+        end
+        i_tubetip = off_t + n_tube
+    end
     return (xs=xs, els=els, nn=nn, i_breech=i_breech,
-            i_muzzle=i_breech+N_BAR, i_foretip=off+N_FORE)
+            i_muzzle=i_muzzle, i_foretip=off+N_FORE, i_tubetip=i_tubetip,
+            n_tube=n_tube)
 end
 
 dofs_of(n1, n2) = (2*n1-1, 2*n1, 2*n2-1, 2*n2)
@@ -135,9 +159,21 @@ dofs_of(n1, n2) = (2*n1-1, 2*n1, 2*n2-1, 2*n2)
 # couplage masse/rotation d'une masse déportée, identique à celui de
 # simulation.jl, où le balayage en position s'était révélé bien plus autoritaire
 # que le balayage en masse.
+# Tube du tuner : aluminium par défaut, comme les Starik/Centra. L'acier, hérité
+# du calage de k = 5 cm dans simulation.jl, est intenable : à 1,195 kg/m un tuner
+# de 200 g ne fait que 167 mm de tube et ne laisse RIEN au curseur — on décrivait
+# un tube nu tout en prétendant en régler la position.
+const TUBE_OD_R, TUBE_WALL_R = 0.040, 0.00125
+const TUBE_RO_R = TUBE_OD_R/2
+const TUBE_RI_R = TUBE_RO_R - TUBE_WALL_R
+const TUBE_A_R  = π * (TUBE_RO_R^2 - TUBE_RI_R^2)
+const TUBE_I_R  = π/4 * (TUBE_RO_R^4 - TUBE_RI_R^4)
+const TUBE_EI_R   = 70e9   * TUBE_I_R      # aluminium
+const TUBE_RHOA_R = 2700.0 * TUBE_A_R
+
 function build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest,
-                     d_overhang = 0.0)
-    T  = rifle_topology(x_breech, L_fore)
+                     d_overhang = 0.0, L_tube = 0.0, m_slider = 0.0, d_slider = 0.0)
+    T  = rifle_topology(x_breech, L_fore; L_tube = L_tube)
     nd = 2 * T.nn
     K  = zeros(nd, nd); M = zeros(nd, nd); Fg = zeros(nd)
     ρA_stock = M_STOCK / (x_breech + L_fore)      # masse répartie sur crosse+av.-bras
@@ -149,6 +185,8 @@ function build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest,
             A = π/4  * (D^2 - D_bore^2)
             I = π/64 * (D^4 - D_bore^4)
             EI, ρA = E * I, ρ_steel * A
+        elseif kind === :tube
+            EI, ρA = TUBE_EI_R, TUBE_RHOA_R
         else
             EI, ρA = EI_stock, ρA_stock
         end
@@ -158,6 +196,14 @@ function build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest,
         @views M[idx, idx] .+= Me
         q  = -ρA * g_ms
         @views Fg[idx] .+= q * le * [0.5, le/12, 0.5, -le/12]
+    end
+
+    # Masse coulissante DANS le tube (modèle élastique), au nœud le plus proche.
+    if T.n_tube > 0 && m_slider > 0
+        k_sl = clamp(round(Int, d_slider / (L_tube / T.n_tube)), 0, T.n_tube)
+        n_sl = k_sl == 0 ? T.i_muzzle : (T.i_tubetip - T.n_tube + k_sl)
+        M[2*n_sl-1, 2*n_sl-1] += m_slider
+        Fg[2*n_sl-1]          += -m_slider * g_ms
     end
 
     dm = 2*T.i_muzzle - 1
@@ -288,8 +334,10 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
                      k_rest, h_bore, unilateral = true, ζ1 = 0.005, ζ2 = 0.005,
                      Δt = 2e-6, t_end = 3.0e-3,
                      p_of_t = nothing, x_of_t = nothing, t_b_override = nothing,
-                     d_overhang = 0.0, return_state = false)
-    S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest, d_overhang)
+                     d_overhang = 0.0, return_state = false,
+                     L_tube = 0.0, m_slider = 0.0, d_slider = 0.0)
+    S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest, d_overhang,
+                    L_tube, m_slider, d_slider)
     xp = x_of_t === nothing ? projectile_pos(v_muzzle) : x_of_t
 
     U_stat, mask0, stable = static_contact(S.K, S.spring_dofs, k_rest, S.Fg; unilateral)
