@@ -700,37 +700,57 @@ if abspath(PROGRAM_FILE) == @__FILE__
     result_pos_high = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
     println()
 
-    # Étape C ter — DIAGNOSTIC SANS DIMENSION contre Kolbe.
+    # Étape C ter — ÉCART À COMBLER PAR L'ACCORD, rapporté à ce que l'accord fournit.
     #
-    # Kolbe est le seul à avoir MESURÉ le taux d'angle de bouche à la sortie, sur
-    # une .22 LR : −9,4 MOA/ms canon nu, +6,0 MOA/ms canon accordé. Leur RAPPORT
-    # est sans dimension, donc INDÉPENDANT de h_offset : aucun choix d'échelle,
-    # ancien ou nouveau, ne peut le déplacer. C'est le seul test du modèle que la
-    # calibration ne peut pas flatter.
+    # POURQUOI CETTE FORME, ET PAS UN RAPPORT nu/accordé. La version antérieure
+    # de ce diagnostic divisait par θ̇(canon nu). C'était une faute de
+    # construction : θ̇(t_b) est la valeur d'une OSCILLATION à un instant donné,
+    # elle peut tomber n'importe où, y compris tout près de zéro — et c'est
+    # précisément ce qui se produit une fois l'inertie du tuner corrigée
+    # (θ̇(nu) = −0,09). Un dénominateur qui traverse zéro ne fait pas un
+    # indicateur : le rapport explosait (×3,6 hier, ×100 aujourd'hui) sans que
+    # rien de physique n'ait changé entre les deux.
     #
-    # CE QUE CE TEST DIT — ET NE DIT PAS. La cible +6,0 est solide : elle est
-    # redérivée par pure cinématique dans kolbe_validation.jl (5,91), sans passer
-    # par son banc. Le modèle l'atteint. En revanche son −9,4 canon nu dépend de
-    # la souplesse de son étau, qu'il NE PUBLIE PAS et qui est justement le
-    # mécanisme de corps rigide que l'encastrement de culasse supprime ici.
+    # On garde l'idée — une grandeur SANS DIMENSION, donc insensible au choix
+    # de h_offset, qui multiplie numérateur et dénominateur à l'identique —
+    # mais on la rapporte à une référence STABLE : le maximum de θ̇ que
+    # l'accord sait produire. D'où
     #
-    # L'écart n'est donc PAS une réfutation du modèle : c'est la première MESURE
-    # de la taille de ce qui lui manque. Le modèle donne un canon nu à ~−1 MOA/ms
-    # quand Kolbe en lit −9,4 : la plage dynamique nu → accordé est 3 à 8 fois
-    # trop étroite, et aucun facteur d'échelle unique ne rejoint les deux points
-    # (il y faudrait un décalage constant de plusieurs MOA/ms, signature d'un
-    # terme de mode commun). Cf. l'avertissement « ne pas se caler sur son étude
-    # de cas » dans ROADMAP.md.
-    println("[C ter] Diagnostic sans dimension contre Kolbe (mesuré, .22 LR)")
+    #     R = θ̇(canon non accordé) / max θ̇(accordé)
+    #
+    # qui se lit « de combien le canon non accordé est-il en dessous de la
+    # cible, rapporté à ce que l'accord peut fournir ». C'est exactement le
+    # travail demandé au tuner.
+    #
+    # CE QUE LE RÉSULTAT LOCALISE. Le modèle donne R ≈ −1,5 % : son canon non
+    # accordé est déjà quasiment sur la cible, le tuner n'a presque rien à
+    # rattraper. Kolbe mesure R = −157 % : son canon part très en dessous et
+    # l'accord doit remonter plus que toute sa course. L'écart n'est donc PAS
+    # dans le mécanisme d'accord — la plage 0 → +6,2 MOA/ms que le modèle
+    # produit est du bon ordre — mais dans l'ÉTAT NON ACCORDÉ, c'est-à-dire
+    # dans l'excitation de base. C'est la signature attendue de la rotation
+    # d'ensemble absente : elle tire fortement la bouche vers le bas sur un
+    # canon nu, sans changer grand-chose à ce qu'un tuner peut ensuite ajouter.
+    #
+    # RÉSERVE MAINTENUE. Le −9,4 de Kolbe dépend de la souplesse non publiée de
+    # son étau (cf. ROADMAP.md) — soit justement le mécanisme manquant. Ce
+    # diagnostic ne prouve donc pas que le modèle a tort : il chiffre, sur une
+    # grandeur que la calibration ne peut pas flatter, l'ampleur de ce qu'il
+    # laisse de côté.
+    println("[C ter] Écart à combler par l'accord (sans dimension, insensible à h_offset)")
     println("-"^72)
-    θdot_bare = result_sweep[1].θdot_MOAms           # m_tuner = 0
-    for (lbl, θdot_tuned) in (("accord en masse",    maximum(r.θdot_MOAms for r in result_sweep)),
-                              ("accord en position", maximum(r.θdot_MOAms for r in result_pos_low)))
-        r_mod, r_kol = θdot_tuned / θdot_bare, KOLBE_TUNED / KOLBE_BARE
-        @printf("  %-19s θ̇(nu) = %+6.2f → θ̇(accordé) = %+6.2f   rapport %+6.3f  (Kolbe %+6.3f, ×%.1f)\n",
-                lbl, θdot_bare, θdot_tuned, r_mod, r_kol, abs(r_mod / r_kol))
+    θdot_bare = result_sweep[1].θdot_MOAms           # m_tuner = 0, canon non accordé
+    R_kolbe   = KOLBE_BARE / KOLBE_TUNED
+    for (lbl, θdot_max) in (("accord en masse",    maximum(r.θdot_MOAms for r in result_sweep)),
+                            ("accord en position", maximum(r.θdot_MOAms for r in result_pos_low)))
+        R = θdot_bare / θdot_max
+        @printf("  %-19s θ̇(nu) = %+6.2f, max atteignable %+5.2f  →  R = %+7.1f %%  (Kolbe %+.0f %%)\n",
+                lbl, θdot_bare, θdot_max, 100R, 100R_kolbe)
     end
-    println("  ⇒ écart STRUCTUREL, non corrigeable par h_offset. Voir ROADMAP.md.")
+    @printf("  ⇒ le modèle demande au tuner ~%.0f fois moins de travail que la mesure.\n",
+            abs(R_kolbe / (θdot_bare / maximum(r.θdot_MOAms for r in result_pos_low))))
+    println("    L'écart est dans l'état NON ACCORDÉ, non dans le mécanisme d'accord :")
+    println("    signature de la rotation d'ensemble que l'encastrement supprime.")
     println()
 
     # Étape D — Tracés
