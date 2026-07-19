@@ -151,6 +151,30 @@ const A_sec  = π/4  * (D_out^2 - D_in^2)
 const I_sec  = π/64 * (D_out^4 - D_in^4)
 const A_bore = π/4  * D_in^2
 const EI     = E * I_sec
+
+# -----------------------------------------------------------------------------
+# ÉCHAUFFEMENT DU CANON (ajouté le 2026-07-19)
+#
+# Dai, Fu, Cao, Lyu et Xu (Mechanics of Solids, 2024) mesurent sur fusil
+# automatique une chute de la fréquence propre entre canon froid et canon chaud :
+# −12,7 % en calcul (Timoshenko), −26,4 % en mesure. La cause est la baisse du
+# module d'Young de l'acier avec la température.
+#
+# POURQUOI NE PAS APPLIQUER LEUR CHIFFRE TEL QUEL. Leur « canon chaud » est
+# celui d'une arme automatique après rafales ; une carabine de match sur une
+# série de 25 coups ne monte que de 30 à 60 °C. On paramètre donc par la
+# PHYSIQUE plutôt que par leur écart : E décroît d'environ 3,6e-4 par degré
+# (≈ −25 % à 700 °C), et f ∝ √E. Contrôle : ce coefficient reproduit leurs
+# −12,7 % pour ΔT ≈ 660 °C, valeur plausible pour leur essai.
+#
+# ORDRE DE GRANDEUR POUR NOUS. +30 à +60 °C ⇒ chute de fréquence de 0,5 à 1,1 %,
+# soit 5 à 11 % de la course qu'offre un tuner de 200 g (~10 %). L'effet est donc
+# réel mais modeste en tir de match — et déterminant en tir soutenu. Il pourrait
+# expliquer la dérive d'un accord sur une longue série et la singularité du coup
+# à canon froid, que rien dans ce modèle ne reproduisait jusqu'ici.
+const K_E_TEMP = 3.6e-4                       # baisse relative de E par °C
+young_at(ΔT) = E * (1 - K_E_TEMP * ΔT)
+EI_at(ΔT) = young_at(ΔT) * I_sec
 const ρA     = ρ_steel * A_sec
 
 # Conversions
@@ -186,8 +210,8 @@ end
 #              m·d    m·d² + J]
 # sur le couple (y, θ) du nœud de bouche : à d = 0 on retrouve le cas classique
 # de la masse ponctuelle.
-function build_system(m_tuner, J_tuner; d_overhang = 0.0)
-    Ke, Me = element_matrices(L_e, EI, ρA)
+function build_system(m_tuner, J_tuner; d_overhang = 0.0, ΔT = 0.0)
+    Ke, Me = element_matrices(L_e, EI_at(ΔT), ρA)
     K = zeros(ndof, ndof)
     M = zeros(ndof, ndof)
     for e in 1:N_elements
@@ -457,8 +481,8 @@ function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
                        ζ1 = 0.005, ζ2 = 0.01,
                        h_offset = h_offset_default,
                        moment_of_t = nothing, v_p = v_muzzle, m_proj = m_p,
-                       verbose = true)
-    Ka, Ma  = build_system(m_tuner, J_tuner; d_overhang = d_overhang)
+                       ΔT = 0.0, verbose = true)
+    Ka, Ma  = build_system(m_tuner, J_tuner; d_overhang = d_overhang, ΔT = ΔT)
     freqs, ωs, Φ = modal_analysis(Ka, Ma; n_modes = 5)
     Ca, _, _ = rayleigh_damping(Ma, Ka, ωs[1], ωs[2], ζ1, ζ2)
     kin     = projectile_kinematics(v_p, L)
@@ -938,6 +962,30 @@ if abspath(PROGRAM_FILE) == @__FILE__
             abs(R_kolbe / (θdot_bare / maximum(r.θdot_MOAms for r in result_pos_low))))
     println("    L'écart est dans l'état NON ACCORDÉ, non dans le mécanisme d'accord :")
     println("    signature de la rotation d'ensemble que l'encastrement supprime.")
+    println()
+
+    # Étape D bis — Dérive thermique (ajoutée le 2026-07-19 d'après Dai et al.)
+    println("[D bis] Dérive thermique de l'accord")
+    println("-"^72)
+    println("Le canon s'échauffe en série ; E baisse, la fréquence propre avec lui.")
+    println("Effet à RÉGLAGE FIXÉ (tuner 100 g à 110 mm), contre la cible de 6,0 :")
+    println()
+    @printf("  %6s | %8s | %10s | %s\n", "ΔT", "f₁ (Hz)", "θ̇(t_b)", "traînée résiduelle à 50 m")
+    println("  " * "-"^62)
+    let trainee = g_accel * D_target^2 * 10.0 / v_muzzle^3 * 1e3
+        for dT in (0.0, 30.0, 60.0, 100.0)
+            r = simulate_shot(0.100; d_overhang = 0.110, h_offset = h_cal,
+                              ΔT = dT, verbose = false)
+            res = trainee * abs(r.θdot_MOAms - θdot_optimum_MOAms) / θdot_optimum_MOAms
+            @printf("  %+5.0f°C | %8.2f | %+10.3f | %.2f mm\n",
+                    dT, r.freqs[1], r.θdot_MOAms, res)
+        end
+    end
+    println()
+    println("  Une série de match échauffe de 30 à 60 °C : la compensation dérive")
+    println("  de 2 à 5 %, soit 0,2 à 0,3 mm de traînée résiduelle. Détectable en")
+    println("  benchrest, non dominant. En tir soutenu (plusieurs centaines de °C),")
+    println("  la dérive dépasserait la course même du tuner.")
     println()
 
     # Étape D — Tracés
