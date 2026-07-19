@@ -172,6 +172,37 @@ const EI     = E * I_sec
 # réel mais modeste en tir de match — et déterminant en tir soutenu. Il pourrait
 # expliquer la dérive d'un accord sur une longue série et la singularité du coup
 # à canon froid, que rien dans ce modèle ne reproduisait jusqu'ici.
+# AMORTISSEMENT (révisé le 2026-07-19 d'après le dépouillement de la littérature)
+#
+# Les valeurs antérieures — ζ₁ = 0,5 %, ζ₂ = 1 % — étaient posées sans référence.
+# Le dépouillement a produit quatre estimations publiées, et elles couvrent plus
+# d'un ORDRE DE GRANDEUR :
+#
+#   Sava (2015), 5,56 automatique, non bridé ......... 0,7 à 1,4 %
+#   Étude fusil de précision, DANS UN ÉTAU ........... 1,7 %
+#   Benet ARCCB, canon de 25 mm, mesure directe ...... 3,6 à 4,6 %
+#   Dai (2024), fusil automatique .................... ~8 à 10 %
+#
+# On retient **1 %**, milieu de la fourchette de Sava — seule mesure sur arme de
+# type carabine dans une configuration non bridée, donc la plus proche de notre
+# cas. Les valeurs plus élevées concernent un canon de 25 mm, une arme dans un
+# étau (qui ajoute ses pertes de contact) ou une arme automatique.
+#
+# ⚠️ LES RÉSULTATS DE CE MODÈLE EN DÉPENDENT CRITIQUEMENT, et c'est à dire :
+#
+#   ζ = 1 %  → θ̇ atteint +5,98, la cible de compensation est accessible
+#   ζ = 2 %  → θ̇ plafonne à +3,94, la cible devient INATTEIGNABLE
+#   ζ = 5 %  → θ̇ plafonne à +2,26 et le canon nu passe POSITIF : la structure
+#              de signe mesurée par Kolbe s'inverse
+#
+# Autrement dit, tout ce que ce modèle produit d'exploitable vit sur le BAS de
+# la fourchette publiée. Si l'amortissement réel d'une carabine est de 2 % ou
+# plus, ce modèle ne décrit pas la compensation positive. Deux des quatre
+# sources ci-dessus sont au-dessus de ce seuil. C'est la réserve la plus lourde
+# de tout le modèle, et elle ne se lèvera que par une mesure (cf. la page wiki
+# « Mesurer l'amortissement d'un canon »).
+const ZETA_DEFAULT = 0.01
+
 const K_E_TEMP = 3.6e-4                       # baisse relative de E par °C
 young_at(ΔT) = E * (1 - K_E_TEMP * ΔT)
 EI_at(ΔT) = young_at(ΔT) * I_sec
@@ -478,7 +509,7 @@ end
 function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
                        d_overhang = 0.0,
                        Δt = 5e-6, t_end = 30e-3,
-                       ζ1 = 0.005, ζ2 = 0.01,
+                       ζ1 = ZETA_DEFAULT, ζ2 = ZETA_DEFAULT,
                        h_offset = h_offset_default,
                        moment_of_t = nothing, v_p = v_muzzle, m_proj = m_p,
                        ΔT = 0.0, verbose = true)
@@ -968,13 +999,19 @@ if abspath(PROGRAM_FILE) == @__FILE__
     println("[D bis] Dérive thermique de l'accord")
     println("-"^72)
     println("Le canon s'échauffe en série ; E baisse, la fréquence propre avec lui.")
-    println("Effet à RÉGLAGE FIXÉ (tuner 100 g à 110 mm), contre la cible de 6,0 :")
+    # Le réglage de référence doit être l'OPTIMUM COURANT, non une cote figée :
+    # coder 110 mm en dur laissait un écart de 0,45 mm dès ΔT = 0 après la
+    # révision de l'amortissement, qui a déplacé l'optimum à 135 mm.
+    d_ref = result_pos_low[argmin([abs(r.θdot_MOAms - θdot_optimum_MOAms)
+                                   for r in result_pos_low])].d_overhang
+    @printf("Effet à RÉGLAGE FIXÉ (tuner %d g à %.0f mm, l'optimum courant), cible 6,0 :\n",
+            round(Int, M_TUNER_LOW*1e3), d_ref*1e3)
     println()
     @printf("  %6s | %8s | %10s | %s\n", "ΔT", "f₁ (Hz)", "θ̇(t_b)", "traînée résiduelle à 50 m")
     println("  " * "-"^62)
     let trainee = g_accel * D_target^2 * 10.0 / v_muzzle^3 * 1e3
         for dT in (0.0, 30.0, 60.0, 100.0)
-            r = simulate_shot(0.100; d_overhang = 0.110, h_offset = h_cal,
+            r = simulate_shot(M_TUNER_LOW; d_overhang = d_ref, h_offset = h_cal,
                               ΔT = dT, verbose = false)
             res = trainee * abs(r.θdot_MOAms - θdot_optimum_MOAms) / θdot_optimum_MOAms
             @printf("  %+5.0f°C | %8.2f | %+10.3f | %.2f mm\n",
@@ -982,10 +1019,17 @@ if abspath(PROGRAM_FILE) == @__FILE__
         end
     end
     println()
-    println("  Une série de match échauffe de 30 à 60 °C : la compensation dérive")
-    println("  de 2 à 5 %, soit 0,2 à 0,3 mm de traînée résiduelle. Détectable en")
-    println("  benchrest, non dominant. En tir soutenu (plusieurs centaines de °C),")
-    println("  la dérive dépasserait la course même du tuner.")
+    println("  LA DÉRIVE N'EST PAS UNE PÉNALITÉ FIXE. Son ampleur, et jusqu'à son")
+    println("  signe, dépendent de l'endroit où l'on se trouve sur la courbe d'accord :")
+    println("  au réglage ci-dessus l'échauffement fait d'abord TRAVERSER la cible")
+    println("  avant de s'en écarter. Un réglage placé de l'autre côté de l'optimum")
+    println("  dériverait dès le premier degré. Il existe donc, en principe, des")
+    println("  réglages plus tolérants à l'échauffement que d'autres — piste que ce")
+    println("  modèle permet désormais d'explorer, et qu'aucune source ne traite.")
+    println()
+    println("  Ordre de grandeur : quelques dixièmes de millimètre à 50 m sur une")
+    println("  série de match (+30 à +60 °C). En tir soutenu (plusieurs centaines de")
+    println("  degrés), la dérive dépasserait la course même du tuner.")
     println()
 
     # Étape D — Tracés
