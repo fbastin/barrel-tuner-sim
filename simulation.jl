@@ -62,7 +62,29 @@ const m_tuner_0 = 0.200
 # faisait varier m de 0 à 400 g en gardant J = 5,0e-4, si bien que le « canon
 # nu » (m = 0) portait encore 5,0e-4 kg·m² d'inertie de rotation à la bouche.
 # Le canon nu n'était pas nu. Avec la forme ci-dessous, J → 0 avec la masse.
-const K_GYRATION = 0.050                      # rayon de giration (m)
+#
+# DIVERGENCE D'ARCHITECTURE ASSUMÉE AVEC LA FAMILLE harral_*. Les deux modèles
+# ne décrivent PAS le même produit, et leurs inerties ne sont pas comparables :
+#
+#   ici (simulation.jl)   ensemble TUBE      k = 5,0 cm FIXE
+#                                            → J(200 g) = 5,0e-4 kg·m²
+#   harral_a22lr.jl       BAGUE compacte     k DÉRIVÉ de la géométrie
+#                         (OD 1,4" / ID 0,915")  → k = 1,1 cm (50 g) à 2,8 cm
+#                                                  (400 g), soit k ∝ f(m)
+#                                            → J(200 g) = 5,6e-5 kg·m²
+#
+# Soit un facteur ~9 sur J à 200 g. Ce n'est pas une incohérence à résoudre
+# mais deux points de la gamme réelle : une bague vissée courte d'un côté, un
+# tube type Starik/Centra de l'autre. Le choix du tube ici n'est pas libre —
+# c'est la SEULE architecture qui autorise les ~10 cm de porte-à-faux que
+# donne l'optimum en position (une bague de 4,5 cm de long ne se visse pas à
+# 10 cm de la bouche). Inversement k fixe est une approximation : sur un vrai
+# tube k croît un peu avec la masse ajoutée. Conséquence pratique : ne PAS
+# confronter directement les θ̇ des deux familles ; leurs résultats ne se
+# recoupent que sur les grandeurs cinématiques (τ_v, taux requis), qui ne
+# dépendent d'aucune des deux inerties.
+#
+const K_GYRATION = 0.050                      # rayon de giration (m), ensemble tube
 tuner_inertia(m_tuner) = m_tuner * K_GYRATION^2
 const J_tuner_0 = tuner_inertia(m_tuner_0)
 
@@ -657,8 +679,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     #     h_cal = calibrate_h_offset(10.0; m_tuner = m_tuner_0)
     println()
 
-    # Étape B — Tir nominal avec h_offset calibré
-    println("[B] Tir nominal (tuner $(Int(m_tuner_0 * 1000)) g, h_offset calibré)")
+    # Étape B — Tir nominal avec le bras de levier effectif
+    println("[B] Tir nominal (tuner $(Int(m_tuner_0 * 1000)) g, h_offset effectif)")
     println("-"^72)
     result_nom = simulate_shot(m_tuner_0; h_offset = h_cal)
     println()
@@ -765,7 +787,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     println("="^72)
     println("Remarques :")
-    println(" • h_offset calibré pour reproduire l'amplitude expérimentale de Kolbe.")
+    println(" • h_offset = bras de levier EFFECTIF (16,5 mm), référent physique Vaughn ≈ 9-12 mm.")
+    println("   Il N'EST PAS calé sur les amplitudes de Kolbe, que le modèle ne reproduit pas (cf. [C ter]).")
     println(" • Les tracés sont enregistrés en PNG dans le répertoire courant.")
     println(" • Amortissement de Rayleigh : ζ₁ = 0.5 %, ζ₂ = 1 %.")
     println(" • Schéma de Newmark : (γ, β) = (1/2, 1/4), Δt = 5 µs.")

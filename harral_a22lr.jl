@@ -140,6 +140,20 @@ end
 # 4. INERTIE DU TUNER (cylindre annulaire acier serré sur la bouche)
 #   OD ≈ 1.4", ID ≈ 0.915" (dia bouche) ; la longueur découle de la masse.
 #   J transverse ≈ m·(3(Ro²+Ri²)+ℓ²)/12 (CoM supposé au nœud de bouche).
+#
+# ARCHITECTURE : BAGUE COMPACTE, et c'est un choix différent de celui de
+# simulation.jl — divergence assumée, à ne pas « corriger » par alignement.
+# Ici J est DÉRIVÉ de la géométrie, donc le rayon de giration équivalent
+# k = √(J/m) croît avec la masse : 1,1 cm à 50 g, 1,7 cm à 200 g, 2,8 cm à
+# 400 g. simulation.jl modélise au contraire un ENSEMBLE TUBE (Starik/Centra)
+# avec k = 5,0 cm fixe, seule architecture autorisant son porte-à-faux de
+# ~10 cm. À 200 g : J = 5,6e-5 ici contre 5,0e-4 là-bas, facteur ~9.
+#
+# CONSÉQUENCE. Les θ̇ et les optima des deux familles ne sont PAS comparables
+# entre eux — ils décrivent deux produits réels distincts, pas deux estimations
+# du même. Seules les grandeurs cinématiques (τ_v, taux de compensation requis,
+# cf. kolbe_validation.jl) se recoupent, précisément parce qu'elles ne dépendent
+# d'aucune inertie de tuner.
 # -----------------------------------------------------------------------------
 function tuner_inertia(m)
     m <= 0 && return 0.0
