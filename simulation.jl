@@ -44,48 +44,76 @@ const ρ_steel   = 7850.0        # Masse volumique acier
 # Tuner (Kolbe : 200 g à la bouche)
 const m_tuner_0 = 0.200
 
-# Inertie PROPRE du tuner autour de son centre de masse, via son rayon de
-# giration. k = 5 cm décrit un ENSEMBLE TUBE façon Starik/Centra — l'objet
-# étalé (tubes de 19, 32 ou 36 cm) dans lequel une masse coulisse. C'est
-# l'architecture retenue ici, et ce n'est pas un choix neutre : c'est la SEULE
-# qui autorise le porte-à-faux de ~10 cm auquel aboutit l'accord au nœud
-# (§6 du wiki), un tuner à corps vissé (Harrell's, Ezell, PMA) n'offrant que
-# quelques millimètres de filetage. Une bague compacte donnerait k = 1,5 cm
-# (bague acier 200 g en Ø40/25 : 33 mm de long, J = 4,6e-5) et un modèle qui
-# ne compense plus du tout en masse pure — cohérent, mais décrivant un autre
-# produit que celui dont il est question.
+# Inertie PROPRE du tuner autour de son centre de masse. L'architecture retenue
+# est un ENSEMBLE TUBE façon Starik/Centra — l'objet étalé (tubes de 19, 32 ou
+# 36 cm) dans lequel une masse coulisse — et ce n'est pas un choix neutre :
+# c'est la SEULE qui autorise le porte-à-faux de ~10 cm auquel aboutit l'accord
+# au nœud (§6 du wiki), un tuner à corps vissé (Harrell's, Ezell, PMA) n'offrant
+# que quelques millimètres de filetage. Une bague compacte donnerait k ≈ 1,7 cm
+# à 200 g et un modèle qui ne compense plus du tout en masse pure — cohérent,
+# mais décrivant un autre produit que celui dont il est question.
 #
 # POURQUOI UNE FONCTION ET NON UNE CONSTANTE. Jusqu'au 2026-07-18 J_tuner_0
-# valait 5,0e-4, FIXE — donc indépendant de la masse. Deux défauts : (a) la
-# valeur correspondait à k = 5 cm à 200 g, soit un ensemble tube et non la
-# bague que le commentaire annonçait ; (b) surtout, le balayage en masse
+# valait 5,0e-4, FIXE — donc indépendant de la masse. Le balayage en masse
 # faisait varier m de 0 à 400 g en gardant J = 5,0e-4, si bien que le « canon
 # nu » (m = 0) portait encore 5,0e-4 kg·m² d'inertie de rotation à la bouche.
-# Le canon nu n'était pas nu. Avec la forme ci-dessous, J → 0 avec la masse.
+# Le canon nu n'était pas nu.
+#
+# k VARIABLE AVEC LA MASSE (2026-07-19). k = 5 cm FIXE restait une approximation
+# fautive dans un balayage en masse : elle prêtait au tuner de 25 g l'étalement
+# d'un tube de 17 cm, et à celui de 400 g un tube deux fois trop court. J est
+# désormais DÉRIVÉ de la géométrie, comme dans harral_a22lr.jl — même formule
+# d'anneau, section de TUBE (paroi mince) au lieu d'une bague pleine :
+#
+#     J = m·(3(Ro² + Ri²) + ℓ²)/12,   ℓ = m/(ρ·A)     [autour du CdM du tuner]
+#
+# La section Ø40 × 1,25 mm n'est pas libre : elle est choisie pour redonner
+# k = 5,02 cm à 200 g, soit la valeur nominale antérieure — le cas de référence
+# est donc préservé, seule la DÉPENDANCE en masse change. Contrôle de réalisme
+# non imposé par ce calage : les longueurs dérivées (4,2 cm à 50 g → 33,5 cm à
+# 400 g) couvrent exactement la gamme des tubes Starik réels (19, 32, 36 cm).
+#
+# CONVENTION ET SA LIMITE. Faire croître la LONGUEUR avec la masse est la
+# convention de harral_a22lr.jl, retenue ici pour que les deux modèles restent
+# structurellement comparables. Sur un tube réel on n'allonge pas le tube : on
+# fait COULISSER une masse dans un tube de longueur fixe. Les deux coïncident
+# tant que la masse ajoutée reste répartie, et divergent pour un poids compact
+# placé loin du centre. Un modèle fidèle demanderait deux corps (tube fixe +
+# masse mobile) et coupleraient J à d_overhang, aujourd'hui réglage indépendant
+# — refonte non faite, et non requise par les questions traitées.
 #
 # DIVERGENCE D'ARCHITECTURE ASSUMÉE AVEC LA FAMILLE harral_*. Les deux modèles
-# ne décrivent PAS le même produit, et leurs inerties ne sont pas comparables :
+# ne décrivent PAS le même produit, et leurs inerties ne sont pas comparables.
+# Depuis le 2026-07-19 tous deux DÉRIVENT J de la géométrie (même formule
+# d'anneau), mais sur des sections différentes :
 #
-#   ici (simulation.jl)   ensemble TUBE      k = 5,0 cm FIXE
-#                                            → J(200 g) = 5,0e-4 kg·m²
-#   harral_a22lr.jl       BAGUE compacte     k DÉRIVÉ de la géométrie
-#                         (OD 1,4" / ID 0,915")  → k = 1,1 cm (50 g) à 2,8 cm
-#                                                  (400 g), soit k ∝ f(m)
-#                                            → J(200 g) = 5,6e-5 kg·m²
+#   ici (simulation.jl)   TUBE paroi mince   Ø40 × 1,25 mm
+#                         → k = 1,8 cm (50 g) à 9,8 cm (400 g)
+#                         → k = 5,02 cm et J = 5,05e-4 kg·m² à 200 g
+#   harral_a22lr.jl       BAGUE pleine       OD 1,4" / ID 0,915"
+#                         → k = 1,1 cm (50 g) à 2,8 cm (400 g)
+#                         → k = 1,67 cm et J = 5,6e-5 kg·m² à 200 g
 #
-# Soit un facteur ~9 sur J à 200 g. Ce n'est pas une incohérence à résoudre
-# mais deux points de la gamme réelle : une bague vissée courte d'un côté, un
-# tube type Starik/Centra de l'autre. Le choix du tube ici n'est pas libre —
-# c'est la SEULE architecture qui autorise les ~10 cm de porte-à-faux que
-# donne l'optimum en position (une bague de 4,5 cm de long ne se visse pas à
-# 10 cm de la bouche). Inversement k fixe est une approximation : sur un vrai
-# tube k croît un peu avec la masse ajoutée. Conséquence pratique : ne PAS
-# confronter directement les θ̇ des deux familles ; leurs résultats ne se
-# recoupent que sur les grandeurs cinématiques (τ_v, taux requis), qui ne
-# dépendent d'aucune des deux inerties.
-#
-const K_GYRATION = 0.050                      # rayon de giration (m), ensemble tube
-tuner_inertia(m_tuner) = m_tuner * K_GYRATION^2
+# Soit un facteur ~9 sur J à 200 g. Ce n'est pas une incohérence à résoudre mais
+# deux points de la gamme réelle : une bague vissée courte d'un côté, un tube
+# type Starik/Centra de l'autre. Conséquence pratique : ne PAS confronter
+# directement les θ̇ des deux familles ; leurs résultats ne se recoupent que sur
+# les grandeurs cinématiques (τ_v, taux requis), qui ne dépendent d'aucune
+# inertie de tuner.
+const TUBE_OD   = 0.040                       # diamètre extérieur du tube (m)
+const TUBE_WALL = 0.00125                     # épaisseur de paroi (m)
+const TUBE_RO   = TUBE_OD / 2
+const TUBE_RI   = TUBE_RO - TUBE_WALL
+const TUBE_A    = π * (TUBE_RO^2 - TUBE_RI^2)
+
+tuner_length(m_tuner) = m_tuner / (ρ_steel * TUBE_A)
+
+function tuner_inertia(m_tuner)
+    m_tuner <= 0 && return 0.0                # canon nu : aucune inertie ajoutée
+    ℓ = tuner_length(m_tuner)
+    return m_tuner * (3 * (TUBE_RO^2 + TUBE_RI^2) + ℓ^2) / 12
+end
+
 const J_tuner_0 = tuner_inertia(m_tuner_0)
 
 # Projectile et balistique interne (.22 LR Match, Eley Tenex)
@@ -718,8 +746,13 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # légère : il relève donc du bas de la fourchette.
     const M_TUNER_LOW  = 0.100
     const M_TUNER_HIGH = 0.200
-    result_pos_low  = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
-    result_pos_high = position_sweep(0.0:0.005:0.10; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
+    # Plage étendue à 150 mm le 2026-07-19 : avec k dérivé de la masse, l'optimum
+    # à 100 g tombe à 100 mm, soit exactement le dernier point de l'ancienne plage
+    # (0-100 mm). Un optimum au bord n'en est pas un — il faut que le balayage
+    # dépasse le minimum pour l'attester. À 150 mm l'écart est franchement
+    # remonté des deux côtés, l'optimum est donc bien intérieur.
+    result_pos_low  = position_sweep(0.0:0.005:0.15; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
+    result_pos_high = position_sweep(0.0:0.005:0.15; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
     println()
 
     # Étape C ter — ÉCART À COMBLER PAR L'ACCORD, rapporté à ce que l'accord fournit.

@@ -131,9 +131,13 @@ println()
 println()
 
 # Deux configurations : canon nu, et l'accord retenu dans la documentation.
+# Les libellés servent de clés plus bas : on les nomme une seule fois.
+const M_DOC, D_DOC = 0.100, 0.100
+const LBL_BARE  = "canon nu (sans tuner)"
+const LBL_TUNED = @sprintf("accordé (%d g à %d mm)", round(Int, M_DOC*1e3), round(Int, D_DOC*1e3))
 configs = [
-    ("canon nu (sans tuner)",        0.0,   0.0),
-    ("accordé (100 g à 90 mm)",      0.100, 0.090),
+    (LBL_BARE,  0.0,   0.0),
+    (LBL_TUNED, M_DOC, D_DOC),
 ]
 
 println("-"^78)
@@ -155,7 +159,7 @@ end
 
 println()
 println("LECTURE")
-nu, ac = results["canon nu (sans tuner)"], results["accordé (100 g à 90 mm)"]
+nu, ac = results[LBL_BARE], results[LBL_TUNED]
 @printf("  • Le tuner écrase la composante de VITESSE : %.2f → %.2f mm d'écart-type\n",
         nu.only_v.sd, ac.only_v.sd)
 @printf("    (c'est la compensation positive, seul mécanisme que ce modèle décrit).\n")
@@ -187,7 +191,12 @@ scan(m, ds) = map(ds) do d
 end
 
 # Les deux masses documentées, et leur réglage publié au critère θ̇ seul.
-scans = [(0.100, 0.055:0.005:0.130, 0.090), (0.200, 0.035:0.005:0.110, 0.065)]
+# Réglages et plages révisés le 2026-07-19 : avec J dérivé de la masse, le
+# réglage au critère θ̇ passe de 90 à 100 mm à 100 g (inchangé à 65 mm à 200 g,
+# la section du tube étant calée pour redonner k = 5,02 cm à cette masse).
+# Les plages sont étendues en conséquence pour encadrer le nœud, qui recule lui
+# aussi (110 → 120 mm à 100 g).
+scans = [(0.100, 0.060:0.005:0.150, 0.100), (0.200, 0.035:0.005:0.120, 0.065)]
 bests = Dict{Float64,Any}()
 
 for (m, ds, d_pub) in scans
@@ -222,13 +231,22 @@ println("critères ne s'opposent donc pas, ils coïncident — le réglage qui c
 println("mieux est aussi le moins sensible à l'aléa d'excitation. Le critère unifié")
 println("s'énonce : faire sortir la balle quand la bouche est à son angle NEUTRE.")
 println()
-println("Reste que viser θ̇ = 6,0 EXACTEMENT n'y conduit pas toujours :")
-println("  • à 200 g, le modèle plafonne à 5,91 et n'atteint jamais 6,0 ; « au plus")
-println("    proche » retombe donc sur le maximum, tout près du passage par zéro.")
-println("    Le 65 mm publié est déjà optimal — facteur 1,0, rien à corriger.")
-println("  • à 100 g, θ̇ franchit 6,0 dès 80 mm puis continue de monter jusqu'à 6,18.")
-println("    Viser la valeur nominale arrête donc AVANT le maximum, et laisse")
-println("    l'angle absolu à 131 µrad au lieu de 16. D'où le facteur 3.")
+println("Reste que viser θ̇ = 6,0 EXACTEMENT n'y conduit pas toujours. Les chiffres")
+println("ci-dessous sont RECALCULÉS à chaque exécution : les figer en dur les aurait")
+println("laissés mentir à la première révision du modèle (ce qui est arrivé).")
+let b2 = bests[0.200], b1 = bests[0.100]
+    @printf("  • à 200 g, θ̇ plafonne à %.2f et n'atteint jamais 6,0 ; « au plus proche »\n",
+            b2.pub.θdot)
+    @printf("    retombe donc sur le maximum, tout près du passage par zéro. Le %.0f mm\n",
+            b2.pub.d * 1e3)
+    @printf("    publié est déjà optimal — facteur %.1f, rien à corriger.\n",
+            b2.pub.sd / b2.best.sd)
+    @printf("  • à 100 g, θ̇ franchit 6,0 puis continue de monter jusqu'à %.2f. Viser la\n",
+            b1.best.θdot)
+    @printf("    valeur nominale arrête donc AVANT le maximum, et laisse l'angle absolu\n")
+    @printf("    à %.0f µrad au lieu de %.0f. D'où le facteur %.1f.\n",
+            abs(b1.pub.θ) * 1e6, abs(b1.best.θ) * 1e6, b1.pub.sd / b1.best.sd)
+end
 println()
 println("PRÉDICTION TESTABLE : viser le passage de θ par zéro (ou, ce qui revient au")
 println("même, le MAXIMUM de θ̇) plutôt qu'une valeur nominale de θ̇. La différence")
