@@ -119,13 +119,12 @@ const J_tuner_0 = tuner_inertia(m_tuner_0)
 # Projectile et balistique interne (.22 LR Match, Eley Tenex)
 const m_p       = 2.6e-3        # 40 grains
 const v_muzzle  = 318.0         # 1043 ft/s (Eley Tenex : cohérent avec le τ_v de Kolbe)
-const PHI_BURN  = 0.35          # fraction de canon en phase d'accélération (profil burnout)
-# t_b n'est plus imposé : il découle du profil, t_b = (1+φ)·L/v_muzzle ≈ 2,80 ms.
-
-# Excitation : pression de chambre (profil gamma)
-const p_max     = 200e6         # Pic de pression (Pa)
-const t_peak    = 0.5e-3        # Pic à 0.5 ms après ignition
-const α_press   = 2.0           # Forme du pic
+# NI t_b NI LA PRESSION NE SONT PLUS POSÉS. Les deux découlent de la balistique
+# intérieure couplée (section 6). Les anciennes constantes p_max / t_peak /
+# α_press / PHI_BURN ont été retirées le 2026-07-19 : elles décrivaient un profil
+# autonome dont l'impulsion valait 5,19× le recul physique, incompatible avec la
+# cinématique posée à côté. Le profil fautif survit dans pcp_vs_firearm.jl, qui
+# documente le défaut, et nulle part ailleurs.
 const h_offset_default = 0.005  # Bras de levier (calibrable)
 
 # Arme complète : grandeurs mesurables pilotant l'AMPLITUDE des vibrations.
@@ -230,36 +229,128 @@ function modal_analysis(Ka, Ma; n_modes = 5)
 end
 
 # -----------------------------------------------------------------------------
-# 6. BALISTIQUE INTERNE : profil « burnout »
-#   La balle accélère (a constante) sur une fraction φ du canon, puis coaste à
-#   v_muzzle. Ce profil reproduit la sensibilité mesurée par Kolbe,
-#   τ_v = −∂t_b/∂v₀ = (1+φ)·L/v² = 8,8 µs/(m/s) à φ=0,35 (canon 26", v=318),
-#   là où l'ancien lag exponentiel plafonnait à L/v² ≈ 6,5 µs. Le temps de
-#   sortie t_b = (1+φ)·L/v_muzzle en découle (≈ 2,80 ms), il n'est plus imposé.
+# 6. BALISTIQUE INTÉRIEURE COUPLÉE
+#
+# REFONTE DU 2026-07-19. Jusqu'ici le modèle portait DEUX représentations
+# incompatibles du même coup de feu : une cinématique « burnout » posée a priori
+# (accélération constante sur φ=0,35 du canon, calée pour reproduire le
+# τ_v = 8,8 µs/(m/s) de Kolbe) et, à côté, un profil de pression servant à
+# l'excitation dont l'impulsion valait 5,19× le recul physique. La première
+# était juste, la seconde fausse, et rien ne les reliait.
+#
+# Désormais la cinématique est INTÉGRÉE depuis la pression :
+#
+#     m_eff(t)·ẍ = p(t,x)·A_bore ,     p = f·ω·z(t) / (V₀ + A_bore·x)
+#
+# avec z(t) la fraction de poudre brûlée. La conservation de la quantité de
+# mouvement devient alors EXACTE PAR CONSTRUCTION — ∫p·A dt = m_eff·v_bouche —
+# et le défaut corrigé ici ne peut plus réapparaître par dérive d'un paramètre.
+#
+# CE QUE CELA CHANGE DE STATUT. τ_v cesse d'être un paramètre ajusté pour
+# devenir une PRÉDICTION du modèle, donc un test. Prédit : 8,3 µs/(m/s) contre
+# 8,8 mesuré par Kolbe, soit −6 % SANS calage — là où l'ancien φ=0,35 était
+# choisi pour tomber juste. On perd 6 % d'accord nominal et on gagne un test.
+#
+# TENSION NON RÉSOLUE. Aucune paramétrisation essayée ne réconcilie le τ_v
+# mesuré avec le pic de pression SAAMI de la .22 LR (165 MPa) : viser 8,3
+# pousse le pic à ~34 MPa. Trois formulations donnent le même compromis (loi
+# de puissance en temps, détente adiabatique en volume, combustion progressive).
+# On retient ici le τ_v, qui est mesuré et qui gouverne la compensation ; le pic
+# est une conséquence, et il est bas. À reprendre avec un vrai modèle de
+# combustion si la question devient critique.
 # -----------------------------------------------------------------------------
-function projectile_kinematics(v_muzzle, L; φ = PHI_BURN)
-    x_bo  = φ * L                       # fin de la phase d'accélération
-    a     = v_muzzle^2 / (2 * x_bo)     # accélération constante
-    t_acc = v_muzzle / a                # = 2φL/v_muzzle
-    t_b   = (1 + φ) * L / v_muzzle
+const V0_CHAMBER = 3.0e-7       # volume de chambre efficace (m³)
+const TAU_BURN   = 600e-6       # temps caractéristique de combustion (s)
+const N_BURN     = 2.0          # exposant de la loi de combustion
+const M_POWDER   = 0.10e-3      # charge de poudre (kg)
+const DT_IB      = 2e-8         # pas d'intégration de la balistique intérieure
+
+burnt_fraction(t) = t <= 0 ? 0.0 : 1 - exp(-(t / TAU_BURN)^N_BURN)
+
+# Intègre la trajectoire jusqu'à la bouche. `fω` est l'impétus total (J), seul
+# paramètre d'échelle : il est calé une fois pour rendre v(L) = v_muzzle.
+function integrate_bore(fω, v_target, L; dt = DT_IB, tmax = 20e-3)
+    x, v, t = 0.0, 0.0, 0.0
+    ts, xs, vs, ps = Float64[], Float64[], Float64[], Float64[]
+    while t < tmax
+        z    = burnt_fraction(t)
+        pr   = fω * z / (V0_CHAMBER + A_bore * x)
+        m_ef = m_p + M_POWDER * z / 3          # Lagrange : gaz entraîné
+        push!(ts, t); push!(xs, x); push!(vs, v); push!(ps, pr)
+        v += pr * A_bore / m_ef * dt
+        x += v * dt
+        t += dt
+        if x >= L
+            push!(ts, t); push!(xs, x); push!(vs, v); push!(ps, pr)
+            return (ts = ts, xs = xs, vs = vs, ps = ps, t_b = t, v_b = v, ok = true)
+        end
+    end
+    return (ts = ts, xs = xs, vs = vs, ps = ps, t_b = NaN, v_b = v, ok = false)
+end
+
+# Cale fω pour que la vitesse de bouche soit celle visée (bissection).
+function calibrate_impetus(v_target, L)
+    lo, hi = 1e-2, 1e4
+    for _ in 1:80
+        mid = 0.5 * (lo + hi)
+        r = integrate_bore(mid, v_target, L)
+        (!r.ok || r.v_b < v_target) ? (lo = mid) : (hi = mid)
+    end
+    return 0.5 * (lo + hi)
+end
+
+# Interpolation linéaire sur une trajectoire tabulée.
+function _interp(ts, ys, t)
+    (t <= ts[1]) && return ys[1]
+    (t >= ts[end]) && return 0.0
+    i = searchsortedfirst(ts, t)
+    i <= 1 && return ys[1]
+    i > length(ys) && return 0.0
+    w = (t - ts[i-1]) / (ts[i] - ts[i-1])
+    return (1 - w) * ys[i-1] + w * ys[i]
+end
+
+# Interface inchangée pour l'aval : x(t), v(t), t_b, τ_v — mais tout est
+# désormais dérivé, plus rien n'est posé. τ_v est obtenu par différences
+# finies sur l'impétus (varier la charge, relire (v_bouche, t_b)).
+# MÉMOÏSATION INDISPENSABLE. La cinématique ne dépend que de (v, L), mais son
+# calcul coûte 85 intégrations de ~150 000 pas (calage de fω par bissection, plus
+# cinq tirs pour τ_v). simulate_shot est appelé des dizaines de fois par balayage
+# et des dizaines de milliers de fois par le Monte-Carlo : sans cache, le coût
+# devient prohibitif alors que le résultat est rigoureusement identique.
+const _KIN_CACHE = Dict{Tuple{Float64,Float64},Any}()
+
+projectile_kinematics(v_muzzle, L) =
+    get!(_KIN_CACHE, (v_muzzle, L)) do
+        _projectile_kinematics(v_muzzle, L)
+    end
+
+function _projectile_kinematics(v_muzzle, L)
+    fω = calibrate_impetus(v_muzzle, L)
+    tr = integrate_bore(fω, v_muzzle, L)
+    pts = Tuple{Float64,Float64}[]
+    for k in (0.92, 0.96, 1.0, 1.04, 1.08)
+        r = integrate_bore(fω * k, v_muzzle, L)
+        r.ok && push!(pts, (r.v_b, r.t_b))
+    end
+    n  = length(pts)
+    mv = sum(q[1] for q in pts) / n
+    mt = sum(q[2] for q in pts) / n
+    τv = abs(sum((q[1]-mv)*(q[2]-mt) for q in pts) / sum((q[1]-mv)^2 for q in pts))
     return (
-        x = t -> t <= 0 ? 0.0 : (t < t_acc ? 0.5*a*t^2 : x_bo + v_muzzle*(t - t_acc)),
-        v = t -> t <= 0 ? 0.0 : (t < t_acc ? a*t       : v_muzzle),
-        t_b = t_b,
-        τ_v = (1 + φ) * L / v_muzzle^2,
+        x   = t -> _interp(tr.ts, tr.xs, t),
+        v   = t -> _interp(tr.ts, tr.vs, t),
+        p   = t -> _interp(tr.ts, tr.ps, t),
+        t_b = tr.t_b,
+        τ_v = τv,
+        fω  = fω,
+        p_peak = maximum(tr.ps),
     )
 end
 
 # -----------------------------------------------------------------------------
 # 7. EXCITATION
 # -----------------------------------------------------------------------------
-function chamber_pressure(t)
-    if t <= 0 || t >= 5 * t_peak
-        return 0.0
-    end
-    u = t / t_peak
-    return p_max * u^α_press * exp(α_press * (1 - u))
-end
 
 function consistent_point_load(F, x, ndof_a)
     if x <= 0 || x >= L
@@ -282,15 +373,28 @@ function consistent_point_load(F, x, ndof_a)
 end
 
 # Vecteur force global à l'instant t (h_offset paramétrable)
-function force_vector(t, x_p_of_t, ndof_a, h_offset)
+#
+# moment_of_t : permet d'INJECTER un autre historique de moment à la culasse, en
+# N·m, au lieu du p(t)·A_bore·h par défaut. Sert à comparer des architectures
+# dont le profil de pression n'a pas la même forme — typiquement un PCP, dont la
+# détente est plate et longue là où la combustion est brève et pointue. Sans ce
+# point d'entrée on ne peut comparer que des amplitudes, jamais des FORMES, ce
+# qui est précisément la question quand on demande si un PCP excite peu.
+# m_proj : masse du projectile pour la charge mobile (b), indépendante de m_p.
+function force_vector(t, x_p_of_t, ndof_a, h_offset;
+                      moment_of_t = nothing, m_proj = m_p, p_of_t = nothing)
     F = zeros(ndof_a)
-    # (a) Moment de recul à la culasse → d.d.l. de rotation du nœud 2
-    p = chamber_pressure(t)
-    F[2] += p * A_bore * h_offset
+    # (a) Moment de recul à la culasse → d.d.l. de rotation du nœud 2.
+    #     La pression vient de la balistique intérieure COUPLÉE (section 6) :
+    #     c'est la même p(t) qui accélère la balle et qui pousse la culasse, ce
+    #     qui rend ∫p·A dt = m_eff·v exact et interdit la dérive corrigée le
+    #     2026-07-19 (l'ancien profil autonome valait 5,19× le recul physique).
+    F[2] += moment_of_t !== nothing ? moment_of_t(t) :
+            (p_of_t === nothing ? 0.0 : p_of_t(t)) * A_bore * h_offset
     # (b) Poids du projectile (charge mobile)
     xp = x_p_of_t(t)
     if 0 < xp < L
-        F .+= consistent_point_load(-m_p * g_accel, xp, ndof_a)
+        F .+= consistent_point_load(-m_proj * g_accel, xp, ndof_a)
     end
     return F
 end
@@ -337,14 +441,17 @@ function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
                        Δt = 5e-6, t_end = 30e-3,
                        ζ1 = 0.005, ζ2 = 0.01,
                        h_offset = h_offset_default,
+                       moment_of_t = nothing, v_p = v_muzzle, m_proj = m_p,
                        verbose = true)
     Ka, Ma  = build_system(m_tuner, J_tuner; d_overhang = d_overhang)
     freqs, ωs, Φ = modal_analysis(Ka, Ma; n_modes = 5)
     Ca, _, _ = rayleigh_damping(Ma, Ka, ωs[1], ωs[2], ζ1, ζ2)
-    kin     = projectile_kinematics(v_muzzle, L)
+    kin     = projectile_kinematics(v_p, L)
     t_b     = kin.t_b                    # découle du profil, plus imposé
     ndof_a  = size(Ka, 1)
-    F_of_t  = t -> force_vector(t, kin.x, ndof_a, h_offset)
+    F_of_t  = t -> force_vector(t, kin.x, ndof_a, h_offset;
+                                moment_of_t = moment_of_t, m_proj = m_proj,
+                                p_of_t = kin.p)
 
     ts, U, V, _ = newmark_solve(Ma, Ca, Ka, F_of_t, t_end, Δt)
 
@@ -671,16 +778,24 @@ end
 # Un h « physiquement juste » dans un modèle amputé donne un modèle
 # physiquement faux ET inutilisable.
 #
-# CE QU'ON RETIENT. h_offset est un bras de levier EFFECTIF, non une cote :
-# la valeur qui amène le modèle à l'optimum de compensation (+6,0 MOA/ms à la
-# sortie — cible redérivée par pure cinématique dans kolbe_validation.jl, 5,91,
-# donc indépendante du banc de Kolbe) pour un réglage de tuner situé dans la
-# course réelle. Le progrès sur l'ancienne version n'est pas la valeur, presque
-# inchangée, mais son STATUT : elle cesse d'être un choix d'échelle sans
-# référent pour devenir une grandeur effective dont Vaughn borne le référent
-# physique (~9-12 mm). Leur rapport, ~1,4 à 1,8, CHIFFRE ce que l'encastrement
-# omet — c'est le premier ancrage externe de ce déficit.
-const H_OFFSET_EFF = 16.5e-3
+# CE QU'ON RETIENT. h_offset n'est PLUS lisible comme un bras de levier. Avec
+# l'ancien profil de pression (impulsion 5,19× le recul physique) il valait
+# 16,5 mm, soit ~1,6× le bras physique borné par Vaughn (~9-12 mm), et l'on
+# écrivait que ce rapport « chiffrait ce que l'encastrement omet ». C'ÉTAIT FAUX :
+# le facteur était contaminé par l'erreur de profil, qui poussait dans le même
+# sens. Le modèle sur-excitait, tout en sous-prédisant Kolbe d'un facteur ~100 ;
+# h_offset absorbait silencieusement les deux défauts à la fois, et le calage
+# « marchait » pour cette seule raison.
+#
+# Avec la balistique intérieure couplée (section 6), où la conservation de la
+# quantité de mouvement est exacte par construction, la valeur requise pour
+# atteindre la compensation (+6,0 MOA/ms) monte à 130 mm — soit ~12× le bras
+# physique. À ce niveau la grandeur excède toute cote de l'arme : ce n'est plus
+# un bras de levier mais un FACTEUR DE GAIN, dont la seule lecture honnête est
+# qu'il mesure l'ampleur du mécanisme absent (rotation d'ensemble supprimée par
+# l'encastrement). Le chiffre est laid, et c'est sa vertu : il ne se déguise plus
+# en grandeur géométrique plausible.
+const H_OFFSET_EFF = 130.1e-3
 
 # Mesures de Kolbe (2015) sur .22 LR, taux d'angle de bouche à la sortie.
 # Servent au diagnostic sans dimension de l'étape [C ter].
@@ -746,13 +861,15 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # légère : il relève donc du bas de la fourchette.
     const M_TUNER_LOW  = 0.100
     const M_TUNER_HIGH = 0.200
-    # Plage étendue à 150 mm le 2026-07-19 : avec k dérivé de la masse, l'optimum
+    # Plage étendue à 200 mm le 2026-07-19. Avec k dérivé de la masse, l'optimum
     # à 100 g tombe à 100 mm, soit exactement le dernier point de l'ancienne plage
-    # (0-100 mm). Un optimum au bord n'en est pas un — il faut que le balayage
-    # dépasse le minimum pour l'attester. À 150 mm l'écart est franchement
-    # remonté des deux côtés, l'optimum est donc bien intérieur.
-    result_pos_low  = position_sweep(0.0:0.005:0.15; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
-    result_pos_high = position_sweep(0.0:0.005:0.15; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
+    # (0-100 mm) : un optimum au bord n'en est pas un. Un premier élargissement à
+    # 150 mm rendait l'optimum intérieur mais tronquait encore la TOLÉRANCE (la
+    # bande à moins de 1 MOA/ms se refermait au-delà) — on aurait publié une
+    # largeur de plage fixée par la fenêtre de calcul, non par la physique. À
+    # 200 mm les deux bornes sont atteintes pour les deux masses.
+    result_pos_low  = position_sweep(0.0:0.005:0.20; m_tuner = M_TUNER_LOW,  h_offset = h_cal)
+    result_pos_high = position_sweep(0.0:0.005:0.20; m_tuner = M_TUNER_HIGH, h_offset = h_cal)
     println()
 
     # Étape C ter — ÉCART À COMBLER PAR L'ACCORD, rapporté à ce que l'accord fournit.
@@ -820,8 +937,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     println("="^72)
     println("Remarques :")
-    println(" • h_offset = bras de levier EFFECTIF (16,5 mm), référent physique Vaughn ≈ 9-12 mm.")
-    println("   Il N'EST PAS calé sur les amplitudes de Kolbe, que le modèle ne reproduit pas (cf. [C ter]).")
+    @printf(" • h_offset = FACTEUR DE GAIN (%.0f mm), non un bras de levier : ~12× le bras\n", H_OFFSET_EFF*1e3)
+    println("   physique (Vaughn ≈ 9-12 mm). Il mesure l'ampleur du mécanisme absent.")
+    println(" • Balistique intérieure COUPLÉE : ∫p·A dt = m_eff·v exact par construction.")
+    println("   τ_v est désormais PRÉDIT (8,31 µs/(m/s)) et non calé — Kolbe mesure 8,8.")
     println(" • Les tracés sont enregistrés en PNG dans le répertoire courant.")
     println(" • Amortissement de Rayleigh : ζ₁ = 0.5 %, ζ₂ = 1 %.")
     println(" • Schéma de Newmark : (γ, β) = (1/2, 1/4), Δt = 5 µs.")
