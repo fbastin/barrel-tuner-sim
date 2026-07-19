@@ -1,8 +1,11 @@
 # =============================================================================
 # ACCORD D'UN TUNER SUR ARME À AIR PRÉCOMPRIMÉE (PCP)
 #
-# Un PCP est quasi sans recul : le moment de recul qui excite le canon d'une
-# arme à feu y est négligeable (cf. la section « Cas du PCP » du document). La
+# Un PCP recule MOINS, pas PAS DU TOUT (la conservation vaut aussi pour lui) :
+# l excitation y est 8 a 16 fois plus faible, non 26 (cf. pcp_vs_firearm.jl).
+# Le moment de recul qui excite le canon d une
+# arme à feu y est fortement réduit, sans disparaître (cf. la section
+# « Cas du PCP » du document). La
 # vibration naît d'AUTRES sources — surtout la frappe marteau/soupape — qu'on
 # ne sait pas mesurer sans banc instrumenté. Et la cible d'accord n'est plus la
 # compensation positive (θ̇ = +6 MOA/ms) mais la BOUCHE STATIONNAIRE : θ̇ ≈ 0 à
