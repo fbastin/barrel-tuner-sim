@@ -128,7 +128,15 @@ end
 
 dofs_of(n1, n2) = (2*n1-1, 2*n1, 2*n2-1, 2*n2)
 
-function build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest)
+# `d_overhang` : porte-à-faux du centre de masse du tuner DEVANT la bouche.
+# AJOUTÉ le 2026-07-19. Jusqu'ici le tuner était une simple masse ponctuelle à la
+# bouche : le modèle d'arme complète ne disposait donc que du levier FAIBLE — la
+# masse — et ignorait le réglage de terrain, qui est la POSITION. C'est le
+# couplage masse/rotation d'une masse déportée, identique à celui de
+# simulation.jl, où le balayage en position s'était révélé bien plus autoritaire
+# que le balayage en masse.
+function build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest,
+                     d_overhang = 0.0)
     T  = rifle_topology(x_breech, L_fore)
     nd = 2 * T.nn
     K  = zeros(nd, nd); M = zeros(nd, nd); Fg = zeros(nd)
@@ -153,9 +161,13 @@ function build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest)
     end
 
     dm = 2*T.i_muzzle - 1
-    M[dm, dm]     += m_tuner
-    M[dm+1, dm+1] += tuner_inertia(m_tuner)
+    d  = d_overhang
+    M[dm,   dm  ] += m_tuner
+    M[dm,   dm+1] += m_tuner * d
+    M[dm+1, dm  ] += m_tuner * d
+    M[dm+1, dm+1] += m_tuner * d^2 + tuner_inertia(m_tuner)
     Fg[dm]        += -m_tuner * g_ms
+    Fg[dm+1]      += -m_tuner * g_ms * d
 
     i_rear = argmin(abs.(T.xs[1:(N_STOCK+1)] .- x_rear))   # sac arrière : sur la crosse
     spring_dofs = [2*i_rear - 1, 2*T.i_foretip - 1]        # sac avant : pointe d'avant-bras
@@ -275,8 +287,9 @@ end
 function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
                      k_rest, h_bore, unilateral = true, ζ1 = 0.005, ζ2 = 0.005,
                      Δt = 2e-6, t_end = 3.0e-3,
-                     p_of_t = nothing, x_of_t = nothing, t_b_override = nothing)
-    S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest)
+                     p_of_t = nothing, x_of_t = nothing, t_b_override = nothing,
+                     d_overhang = 0.0)
+    S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest, d_overhang)
     xp = x_of_t === nothing ? projectile_pos(v_muzzle) : x_of_t
 
     U_stat, mask0, stable = static_contact(S.K, S.spring_dofs, k_rest, S.Fg; unilateral)
