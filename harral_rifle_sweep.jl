@@ -265,11 +265,19 @@ function point_load_barrel(Fval, x_global, T, x_breech, nd)
     return F
 end
 
+# `p_of_t`, `x_of_t` et `t_b_override` permettent d'INJECTER une balistique
+# intérieure externe (typiquement la version couplée de simulation.jl, où la
+# cinématique est intégrée depuis la pression). Par défaut, comportement
+# inchangé : gabarit `chamber_pressure` rééchelonné sur l'impulsion de recul et
+# cinématique burnout locale. Ce point d'entrée existe pour confronter la
+# STRUCTURE (crosse + appuis) à la meilleure EXCITATION disponible, les deux
+# n'ayant jamais été combinées.
 function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
                      k_rest, h_bore, unilateral = true, ζ1 = 0.005, ζ2 = 0.005,
-                     Δt = 2e-6, t_end = 3.0e-3)
+                     Δt = 2e-6, t_end = 3.0e-3,
+                     p_of_t = nothing, x_of_t = nothing, t_b_override = nothing)
     S = build_rifle(; m_tuner, x_breech, L_fore, x_rear, EI_stock, k_rest)
-    xp = projectile_pos(v_muzzle)
+    xp = x_of_t === nothing ? projectile_pos(v_muzzle) : x_of_t
 
     U_stat, mask0, stable = static_contact(S.K, S.spring_dofs, k_rest, S.Fg; unilateral)
     stable || return nothing                 # l'arme bascule ⇒ config rejetée
@@ -291,7 +299,10 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
     p_scale = (1 + β_GAZ) * m_p * v_muzzle / (A_bore * PRESSURE_SHAPE_INT)
     function F_of_t(t)
         F = copy(S.Fg)
-        F[d_breech_θ] += chamber_pressure(t) * p_scale * A_bore * h_bore   # moment de recul PHYSIQUE
+        # Moment de recul physique. Avec une pression injectée, elle est déjà
+        # cohérente en impulsion par construction : pas de rééchelonnement.
+        pt = p_of_t === nothing ? chamber_pressure(t) * p_scale : p_of_t(t)
+        F[d_breech_θ] += pt * A_bore * h_bore
         F .+= point_load_barrel(-m_p * g_ms, x_breech + xp(t), S.T, x_breech, S.nd)
         return F
     end
@@ -300,7 +311,7 @@ function shoot_rifle(v_muzzle; m_tuner, x_breech, L_fore, x_rear, EI_stock,
                                        F_of_t, t_end, Δt; U0 = U_stat, unilateral)
 
     dm  = 2 * S.T.i_muzzle - 1
-    t_b = exit_time(v_muzzle)
+    t_b = t_b_override === nothing ? exit_time(v_muzzle) : t_b_override
     ib  = argmin(abs.(ts .- t_b))
     const_MOAms = (180*60/π) * 1e-3        # rad/s → MOA/ms
     return (θ_tb = U[dm+1, ib], ẏ_tb = V[dm, ib],
