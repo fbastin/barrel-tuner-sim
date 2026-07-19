@@ -259,8 +259,23 @@ end
 # est une conséquence, et il est bas. À reprendre avec un vrai modèle de
 # combustion si la question devient critique.
 # -----------------------------------------------------------------------------
-const V0_CHAMBER = 3.0e-7       # volume de chambre efficace (m³)
-const TAU_BURN   = 600e-6       # temps caractéristique de combustion (s)
+# PARAMÈTRES CONTRAINTS PAR LA LITTÉRATURE (2026-07-19), non ajustés librement.
+# Source : G. Kolbe, « The Ballistics Handbook » (2000), données .22 LR reprises
+# par R. Kenchington (Long Range Rimfire Club) — même auteur que le τ_v de
+# référence, donc cohérent avec le reste de la validation :
+#   • pic de pression à 0,25 ms, après 9,4 mm de trajet
+#   • poudre entièrement brûlée vers 1 pouce de trajet
+#   • vitesse maximale à 19 pouces (~1,5 ms), sortie du 28" à 2,3 ms
+#   • pic ~15 000 psi = 103 MPa  (et NON les 165 MPa de la limite SAAMI, qui
+#     est un maximum admissible et non une valeur de travail — erreur commise
+#     lors du premier calage)
+# τ_b = 150 µs place la fin de combustion au bon endroit ; le modèle rend alors
+# un pic de 99 MPa (−3 % sur la cible), et surtout retrouve la STRUCTURE DE
+# SIGNE de Kolbe : canon nu négatif, accord ramenant positif. À τ_b = 600 µs,
+# valeur choisie arbitrairement lors de la refonte, cette structure était perdue
+# (canon nu déjà au-dessus de la cible, tuner purement dégradant).
+const V0_CHAMBER = 1.0e-7       # volume de chambre efficace (m³)
+const TAU_BURN   = 150e-6       # temps caractéristique de combustion (s)
 const N_BURN     = 2.0          # exposant de la loi de combustion
 const M_POWDER   = 0.10e-3      # charge de poudre (kg)
 const DT_IB      = 2e-8         # pas d'intégration de la balistique intérieure
@@ -789,13 +804,13 @@ end
 #
 # Avec la balistique intérieure couplée (section 6), où la conservation de la
 # quantité de mouvement est exacte par construction, la valeur requise pour
-# atteindre la compensation (+6,0 MOA/ms) monte à 130 mm — soit ~12× le bras
+# atteindre la compensation (+6,0 MOA/ms) monte à 62,5 mm — soit ~6× le bras
 # physique. À ce niveau la grandeur excède toute cote de l'arme : ce n'est plus
 # un bras de levier mais un FACTEUR DE GAIN, dont la seule lecture honnête est
 # qu'il mesure l'ampleur du mécanisme absent (rotation d'ensemble supprimée par
 # l'encastrement). Le chiffre est laid, et c'est sa vertu : il ne se déguise plus
 # en grandeur géométrique plausible.
-const H_OFFSET_EFF = 130.1e-3
+const H_OFFSET_EFF = 62.5e-3
 
 # Mesures de Kolbe (2015) sur .22 LR, taux d'angle de bouche à la sortie.
 # Servent au diagnostic sans dimension de l'étape [C ter].
@@ -937,10 +952,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     println("="^72)
     println("Remarques :")
-    @printf(" • h_offset = FACTEUR DE GAIN (%.0f mm), non un bras de levier : ~12× le bras\n", H_OFFSET_EFF*1e3)
+    @printf(" • h_offset = FACTEUR DE GAIN (%.0f mm), non un bras de levier : ~6× le bras\n", H_OFFSET_EFF*1e3)
     println("   physique (Vaughn ≈ 9-12 mm). Il mesure l'ampleur du mécanisme absent.")
     println(" • Balistique intérieure COUPLÉE : ∫p·A dt = m_eff·v exact par construction.")
-    println("   τ_v est désormais PRÉDIT (8,31 µs/(m/s)) et non calé — Kolbe mesure 8,8.")
+    @printf("   τ_v est désormais PRÉDIT (%.2f µs/(m/s)) et non calé — Kolbe mesure 8,8.\n",
+            projectile_kinematics(v_muzzle, L).τ_v * 1e6)
     println(" • Les tracés sont enregistrés en PNG dans le répertoire courant.")
     println(" • Amortissement de Rayleigh : ζ₁ = 0.5 %, ζ₂ = 1 %.")
     println(" • Schéma de Newmark : (γ, β) = (1/2, 1/4), Δt = 5 µs.")
