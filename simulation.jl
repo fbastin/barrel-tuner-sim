@@ -43,15 +43,28 @@ const ρ_steel   = 7850.0        # Masse volumique acier
 
 # Tuner (Kolbe : 200 g à la bouche)
 const m_tuner_0 = 0.200
-# J_tuner_0 : inertie PROPRE du tuner autour de son centre de masse. La valeur
-# ci-dessous correspond à un rayon de giration de 5 cm à 200 g (7 cm à 100 g) —
-# c'est-à-dire un ENSEMBLE TUBE façon Starik/Centra (tubes de 19 à 36 cm), non
-# une bague compacte, pour laquelle on trouverait plutôt ~1e-5 à 7e-5.
-# Ce n'est pas neutre : dans build_system le terme vaut m·d² + J_tuner, et à
-# grand porte-à-faux J pèse jusqu'à ~30 % du total. La position du nœud s'en
-# ressent (100 mm à J = 5e-4, 120 mm à J = 1e-5), même si la dispersion
-# atteinte au nœud, elle, ne bouge pas (~0,23 mm). Cf. §6 du wiki.
-const J_tuner_0 = 5.0e-4
+
+# Inertie PROPRE du tuner autour de son centre de masse, via son rayon de
+# giration. k = 5 cm décrit un ENSEMBLE TUBE façon Starik/Centra — l'objet
+# étalé (tubes de 19, 32 ou 36 cm) dans lequel une masse coulisse. C'est
+# l'architecture retenue ici, et ce n'est pas un choix neutre : c'est la SEULE
+# qui autorise le porte-à-faux de ~10 cm auquel aboutit l'accord au nœud
+# (§6 du wiki), un tuner à corps vissé (Harrell's, Ezell, PMA) n'offrant que
+# quelques millimètres de filetage. Une bague compacte donnerait k = 1,5 cm
+# (bague acier 200 g en Ø40/25 : 33 mm de long, J = 4,6e-5) et un modèle qui
+# ne compense plus du tout en masse pure — cohérent, mais décrivant un autre
+# produit que celui dont il est question.
+#
+# POURQUOI UNE FONCTION ET NON UNE CONSTANTE. Jusqu'au 2026-07-18 J_tuner_0
+# valait 5,0e-4, FIXE — donc indépendant de la masse. Deux défauts : (a) la
+# valeur correspondait à k = 5 cm à 200 g, soit un ensemble tube et non la
+# bague que le commentaire annonçait ; (b) surtout, le balayage en masse
+# faisait varier m de 0 à 400 g en gardant J = 5,0e-4, si bien que le « canon
+# nu » (m = 0) portait encore 5,0e-4 kg·m² d'inertie de rotation à la bouche.
+# Le canon nu n'était pas nu. Avec la forme ci-dessous, J → 0 avec la masse.
+const K_GYRATION = 0.050                      # rayon de giration (m)
+tuner_inertia(m_tuner) = m_tuner * K_GYRATION^2
+const J_tuner_0 = tuner_inertia(m_tuner_0)
 
 # Projectile et balistique interne (.22 LR Match, Eley Tenex)
 const m_p       = 2.6e-3        # 40 grains
@@ -269,7 +282,7 @@ end
 # -----------------------------------------------------------------------------
 # 10. SIMULATION D'UN TIR (h_offset paramétrable)
 # -----------------------------------------------------------------------------
-function simulate_shot(m_tuner; J_tuner = J_tuner_0,
+function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
                        d_overhang = 0.0,
                        Δt = 5e-6, t_end = 30e-3,
                        ζ1 = 0.005, ζ2 = 0.01,

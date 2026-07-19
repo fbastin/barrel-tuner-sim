@@ -75,7 +75,7 @@ const SEED    = 20260718
 # 2 résolutions de Newmark au lieu de N_SHOTS.
 # -----------------------------------------------------------------------------
 function response_split(m_tuner; d_overhang = 0.0, h_offset = H_OFFSET_EFF,
-                        J_tuner = J_tuner_0)
+                        J_tuner = tuner_inertia(m_tuner))
     tot  = simulate_shot(m_tuner; d_overhang, h_offset, J_tuner, verbose = false)
     proj = simulate_shot(m_tuner; d_overhang, h_offset = 0.0, J_tuner, verbose = false)
     return (ts = tot.ts, θ_rec = tot.θ_L .- proj.θ_L, θ_proj = proj.θ_L)
@@ -133,7 +133,7 @@ println()
 # Deux configurations : canon nu, et l'accord retenu dans la documentation.
 configs = [
     ("canon nu (sans tuner)",        0.0,   0.0),
-    ("accordé (100 g à 80 mm)",      0.100, 0.080),
+    ("accordé (100 g à 90 mm)",      0.100, 0.090),
 ]
 
 println("-"^78)
@@ -155,7 +155,7 @@ end
 
 println()
 println("LECTURE")
-nu, ac = results["canon nu (sans tuner)"], results["accordé (100 g à 80 mm)"]
+nu, ac = results["canon nu (sans tuner)"], results["accordé (100 g à 90 mm)"]
 @printf("  • Le tuner écrase la composante de VITESSE : %.2f → %.2f mm d'écart-type\n",
         nu.only_v.sd, ac.only_v.sd)
 @printf("    (c'est la compensation positive, seul mécanisme que ce modèle décrit).\n")
@@ -187,7 +187,7 @@ scan(m, ds) = map(ds) do d
 end
 
 # Les deux masses documentées, et leur réglage publié au critère θ̇ seul.
-scans = [(0.100, 0.055:0.005:0.130, 0.080), (0.200, 0.035:0.005:0.110, 0.065)]
+scans = [(0.100, 0.055:0.005:0.130, 0.090), (0.200, 0.035:0.005:0.110, 0.065)]
 bests = Dict{Float64,Any}()
 
 for (m, ds, d_pub) in scans

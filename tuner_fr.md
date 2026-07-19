@@ -928,7 +928,7 @@ masse ponctuelle du modèle précédent.
 fourchette réelle (100 et 200 g). En haut : $\dot\theta(L,t_b)$ en
 fonction du porte-à-faux $d$ ; la bande verte marque $\pm 1$ MOA/ms
 autour de la cible de Kolbe. Le porte-à-faux seul fait passer le taux
-angulaire de $+0{,}8$ à $+6{,}2$ MOA/ms (100 g) ou de $+1{,}8$ à
+angulaire de $-1{,}7$ à $+6{,}2$ MOA/ms (100 g) ou de $+1{,}8$ à
 $+5{,}9$ (200 g) : dans les deux cas la course couvre tout l'écart entre
 arme non compensée et cible. En bas : $f_1$ décroît avec $d$, la
 position décalant les mêmes fréquences modales que la
@@ -938,11 +938,11 @@ width="0.85\\linewidth"}
 Trois résultats se dégagent. D'abord, *la position suffit à accorder* :
 nul besoin de changer de poids, la course du tuner traverse toute la
 plage utile. Ensuite, *le poids détermine où sur la course*, non la
-possibilité d'accorder : la cible est atteinte vers $d \approx 80$ mm à
+possibilité d'accorder : la cible est atteinte vers $d \approx 90$ mm à
 100 g et vers $d \approx 65$ mm à 200 g --- plus la masse est légère,
 plus le sweet spot est éloigné de la bouche. Enfin, *l'optimum est
 large*, et d'autant plus que la masse est élevée : la zone à moins de 1
-MOA/ms de la cible couvre $\sim 45$ mm de course à 100 g et $\sim 65$ mm
+MOA/ms de la cible couvre $\sim 30$ mm de course à 100 g et $\sim 65$ mm
 à 200 g. Masse et position forment ainsi un unique *espace d'accord*, le
 poids fixant la courbe et la position accordant dessus.
 
@@ -985,20 +985,21 @@ paie, la sensibilité à cette variabilité étant proportionnelle à l'angle
 *absolu* $\theta(t_b)$. À 200 g, le modèle plafonne à $5{,}91$ MOA/ms et
 n'atteint jamais $6{,}0$ :  au plus proche de la cible  retombe donc sur
 le maximum, c'est-à-dire sur le nœud, et le réglage de $65$ mm est déjà
-le bon. À 100 g au contraire, $\dot\theta$ franchit $6{,}0$ dès $80$ mm
-puis continue de monter jusqu'à $6{,}18$ : viser la valeur nominale
-s'arrête *avant* le maximum, à $131$ $\mu$rad du neutre au lieu de $16$.
-Le simulateur de variabilité (`variability.jl`) chiffre l'écart à un
-**facteur 3** sur la dispersion prédite ($0{,}70$ contre $0{,}23$ mm
-d'écart-type à 50 m), l'optimum se déplaçant à $100$--$120$ mm
+le bon. À 100 g au contraire, $\dot\theta$ franchit $6{,}0$ vers $95$ mm
+et culmine à $6{,}20$ vers $110$ mm :  au plus proche de $6{,}0$ 
+retient donc $90$ mm, *avant* le maximum, à $138$ $\mu$rad du neutre au
+lieu de $13$. Le simulateur de variabilité (`variability.jl`) chiffre
+l'écart à un **facteur 3** sur la dispersion prédite ($0{,}73$ contre
+$0{,}24$ mm d'écart-type à 50 m), l'optimum se déplaçant à $\sim 110$ mm
 (fourchette et non cote : la position du nœud dépend de l'inertie propre
-du tuner, que le modèle fixe sans la justifier ; la dispersion atteinte
-au nœud, elle, reste $\sim 0{,}23$ mm quelle que soit cette inertie). Un
-tel porte-à-faux n'est réalisable qu'avec l'architecture à tube
+du tuner, donc de son architecture --- le modèle décrit ici un ensemble
+tube, rayon de giration 5 cm ; la dispersion atteinte au nœud, elle,
+reste $\sim 0{,}23$ mm quelle que soit cette inertie). Un tel
+porte-à-faux n'est réalisable qu'avec l'architecture à tube
 (Starik/Centra, tubes de 19 à 36 cm), non avec un corps vissé ; la
 flèche statique ajoutée est négligeable ($0{,}04$ mm) et la liaison
 demeure rigide, une masse de 100 g sur 10 cm de tube carbone résonnant
-vers 600 Hz, bien au-dessus du mode fondamental. Les $80$ mm avancés
+vers 600 Hz, bien au-dessus du mode fondamental. Les $90$ mm avancés
 plus haut sont donc un *artefact de méthode*, non un optimum. Ce
 résultat conforte par ailleurs le *ladder tune* : le tireur qui balaie
 la course et retient le meilleur groupement trouve le nœud sans le
