@@ -241,7 +241,20 @@ end
 #              m·d    m·d² + J]
 # sur le couple (y, θ) du nœud de bouche : à d = 0 on retrouve le cas classique
 # de la masse ponctuelle.
-function build_system(m_tuner, J_tuner; d_overhang = 0.0, ΔT = 0.0)
+# ENCASTREMENT ÉLASTIQUE (ajouté le 2026-07-19). `K_root = Inf` conserve
+# l'encastrement rigide, comportement par défaut et inchangé.
+#
+# MOTIF. O'Neil (2022) mesure sur Tikka T3X un rapport f₂/f₁ = 8,16, quand tous
+# les modèles — le nôtre, son ANSYS, son analytique — donnent 6,27, valeur
+# théorique de la poutre encastrée-libre. Un canon réel, vissé dans une boîte
+# posée dans une crosse, n'est pas parfaitement encastré. Un ressort de torsion
+# de 1,09e4 N·m/rad à la culasse reproduit le rapport mesuré.
+#
+# POURQUOI CE N'EST PAS LE DÉFAUT. Les fréquences donnant 8,16 viennent d'un
+# essai que l'auteur juge lui-même insuffisamment résolu, et le pic à 263,7 Hz
+# pourrait appartenir à la crosse plutôt qu'au canon. On offre la capacité, on
+# ne la présume pas.
+function build_system(m_tuner, J_tuner; d_overhang = 0.0, ΔT = 0.0, K_root = Inf)
     Ke, Me = element_matrices(L_e, EI_at(ΔT), ρA)
     K = zeros(ndof, ndof)
     M = zeros(ndof, ndof)
@@ -250,7 +263,12 @@ function build_system(m_tuner, J_tuner; d_overhang = 0.0, ΔT = 0.0)
         @views K[idx, idx] .+= Ke
         @views M[idx, idx] .+= Me
     end
-    active = 3:ndof
+    if isfinite(K_root)
+        K[2, 2] += K_root          # ressort de torsion à la culasse
+        active = 2:ndof            # θ₁ libéré, y₁ toujours bloqué
+    else
+        active = 3:ndof            # encastrement rigide (défaut)
+    end
     Ka = K[active, active]
     Ma = copy(M[active, active])
     d = d_overhang
@@ -512,8 +530,9 @@ function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
                        ζ1 = ZETA_DEFAULT, ζ2 = ZETA_DEFAULT,
                        h_offset = h_offset_default,
                        moment_of_t = nothing, v_p = v_muzzle, m_proj = m_p,
-                       ΔT = 0.0, verbose = true)
-    Ka, Ma  = build_system(m_tuner, J_tuner; d_overhang = d_overhang, ΔT = ΔT)
+                       ΔT = 0.0, K_root = Inf, verbose = true)
+    Ka, Ma  = build_system(m_tuner, J_tuner; d_overhang = d_overhang, ΔT = ΔT,
+                           K_root = K_root)
     freqs, ωs, Φ = modal_analysis(Ka, Ma; n_modes = 5)
     Ca, _, _ = rayleigh_damping(Ma, Ka, ωs[1], ωs[2], ζ1, ζ2)
     kin     = projectile_kinematics(v_p, L)
