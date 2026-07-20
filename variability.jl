@@ -29,14 +29,15 @@
 # et l'on forme la hauteur d'impact, relative au coup nominal :
 #   y = D·θ(t_b(v)) + g·D²·δv/v₀³
 #       └─ angle de lancement ─┘   └─ chute différentielle ─┘
-# Le premier terme dépend de l'instant de sortie t_b = (1+φ)·L/v, le second de
-# la vitesse seule ; leur annulation EST la compensation positive.
+# Le premier terme dépend de l'instant de sortie t_b(v), le second de la vitesse
+# seule ; leur annulation EST la compensation positive.
 #
 # APPROXIMATION ASSUMÉE. L'historique θ(t) est calculé UNE fois (deux passes
 # Newmark, cf. plus bas) puis échantillonné à des t_b différents, au lieu d'être
-# recalculé pour chaque v. C'est licite au premier ordre : l'excitation est
-# chamber_pressure(t), fonction du TEMPS et non de la vitesse. Seule la charge
-# mobile du projectile dépend de v — terme minuscule (2,6 g) isolé ci-dessous.
+# recalculé pour chaque v. C'est licite au premier ordre : l'excitation est la
+# pression p(t) issue de la balistique intérieure, fonction du TEMPS et non de la
+# vitesse. Seule la charge mobile du projectile dépend de v — terme minuscule
+# (2,6 g) isolé ci-dessous.
 #
 # Usage :   julia variability.jl
 # =============================================================================
@@ -99,6 +100,8 @@ end
 # subissent ainsi exactement les mêmes tirages (variables aléatoires communes),
 # de sorte que les écarts entre lignes du tableau viennent du réglage et non du
 # bruit d'échantillonnage.
+const KIN_REF = projectile_kinematics(v_muzzle, L)
+
 function dispersion(resp; σ_v = σ_V_DEFAULT, σ_k = σ_K_DEFAULT,
                     D = D_target, v0 = v_muzzle, n = N_SHOTS, seed = SEED)
     rng = MersenneTwister(seed)
@@ -107,7 +110,14 @@ function dispersion(resp; σ_v = σ_V_DEFAULT, σ_k = σ_K_DEFAULT,
         δv = σ_v * randn(rng)
         k  = 1.0 + σ_k * randn(rng)
         v   = v0 + δv
-        t_b = (1 + PHI_BURN) * L / v
+        # t_b(v) : linéarisation autour du nominal via τ_v, DÉRIVÉE du modèle
+        # couplé (section 6 de simulation.jl). Remplace l'ancienne formule
+        # burnout (1+φ)L/v, supprimée avec la refonte du 2026-07-19 — c'est
+        # cette référence morte qui cassait ce script. Recalculer la balistique
+        # intérieure complète pour chacun des 20 000 tirs serait prohibitif, et
+        # inutile : τ_v est par définition ∂t_b/∂v, donc exact au premier ordre
+        # sur des écarts de vitesse de quelques m/s.
+        t_b = KIN_REF.t_b - KIN_REF.τ_v * δv
         θ   = k * interp(resp.ts, resp.θ_rec, t_b) + interp(resp.ts, resp.θ_proj, t_b)
         # angle de lancement + chute différentielle (balle rapide = impact haut)
         ys[i] = (D * θ + g_accel * D^2 * δv / v0^3) * 1e3
@@ -132,7 +142,15 @@ println()
 
 # Deux configurations : canon nu, et l'accord retenu dans la documentation.
 # Les libellés servent de clés plus bas : on les nomme une seule fois.
-const M_DOC, D_DOC = 0.100, 0.100
+# Réglage de référence : l'optimum COURANT du modèle, non une cote figée.
+# Il a bougé plusieurs fois (100 → 110 → 135 mm) au fil des révisions du
+# 2026-07-19 ; le coder en dur laissait ce script décrire un réglage périmé.
+const M_DOC = 0.100
+const D_DOC = let ds = 0.0:0.005:0.20
+    rs = [simulate_shot(M_DOC; d_overhang = d, h_offset = H_OFFSET_EFF,
+                        verbose = false).θdot_MOAms for d in ds]
+    ds[argmin([abs(x - θdot_optimum_MOAms) for x in rs])]
+end
 const LBL_BARE  = "canon nu (sans tuner)"
 const LBL_TUNED = @sprintf("accordé (%d g à %d mm)", round(Int, M_DOC*1e3), round(Int, D_DOC*1e3))
 configs = [
@@ -196,7 +214,7 @@ end
 # la section du tube étant calée pour redonner k = 5,02 cm à cette masse).
 # Les plages sont étendues en conséquence pour encadrer le nœud, qui recule lui
 # aussi (110 → 120 mm à 100 g).
-scans = [(0.100, 0.060:0.005:0.150, 0.100), (0.200, 0.035:0.005:0.120, 0.065)]
+scans = [(0.100, 0.080:0.005:0.180, D_DOC), (0.200, 0.040:0.005:0.130, 0.085)]
 bests = Dict{Float64,Any}()
 
 for (m, ds, d_pub) in scans
