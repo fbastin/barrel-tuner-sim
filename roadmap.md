@@ -31,7 +31,7 @@ L'optimisation récente du modèle de balistique interne couplée a mis en évid
 1.  **L'argument d'impossibilité sur le mode de whip fondamental** — *(conclusion confirmée, chiffres corrigés)* :
     *   Les valeurs citées ($-9{,}4$ MOA/ms au canon nu) datent d'avant la correction de `J_tuner` : le canon nu donne aujourd'hui $-2{,}01$ MOA/ms (et $-0{,}32$ avec le tuner de 200 g posé à la bouche, sans porte-à-faux --- les deux avaient été confondus ici). Le raisonnement en déphasage a été refait sur une base plus solide.
     *   **Forme retenue de l'argument** : reproduire le basculement mesuré par Kolbe par un simple décalage de fréquence exigerait $\Delta f/f \approx 72\ \%$, quand un tuner de 200 g ne déplace le fondamental que de $10{,}3\ \%$ — un **facteur 7** d'écart.
-    *   *Conclusion inchangée, et c'est le résultat le plus robuste du dossier* : **l'accord ne s'effectue pas sur le mode de flexion fondamental**, mais sur des modes supérieurs (modes 9 et 10, à $2333$ et $3009$ Hz), où le projectile sort après $6$ à $8$ cycles. Deux raisons indépendantes convergent : l'accélération de bouche favorise les hautes fréquences en $\omega^2$, et ces modes portent $28\ \%$ du débattement chacun contre $2\ \%$ pour le fondamental.
+    *   *Conclusion inchangée, et c'est le résultat le plus robuste du dossier* : **l'accord ne s'effectue pas sur le mode de flexion fondamental**, mais sur des modes supérieurs (modes 5 et 6, à $2271$ et $3394$ Hz), où le projectile sort après $6$ à $8$ cycles. Deux raisons indépendantes convergent : l'accélération de bouche favorise les hautes fréquences en $\omega^2$, et ces modes portent $28\ \%$ du débattement chacun contre $2\ \%$ pour le fondamental.
 2.  **La flexibilité propre du tuner-tube** :
     *   Dans la bande spectrale utile (2-3 kHz), les tuners à tube long (type Starik de 15-30 cm) ne se comportent plus comme des masses ponctuelles rigides car ils présentent leurs propres résonances élastiques internes (vers 600 Hz). Cet effet est désormais **modélisé et quantifié** (poutre élastique dans `frame_v2.jl`/`sensitivity_coupled.jl`), et non plus seulement signalé.
 3.  **Le « mur » d'excitation était en grande partie un artefact de l'encastrement** — *(découverte du 21 juillet 2026)* :
@@ -48,7 +48,18 @@ Pour lever ces verrous physiques, le simulateur doit évoluer selon les axes sui
 ### Étape 1 : Résolution et maillage haute fréquence ($> 2$ kHz) — **engagée**
 *   **Objectif** : Capturer les modes supérieurs ($n \ge 5$) sur lesquels s'opère le réglage fin observé sur le terrain (ladder tuning).
 *   **Action** : Affiner le maillage éléments finis du canon et réduire drastiquement le pas de temps d'intégration $\Delta t$ dans le solveur de Newmark-$\beta$.
-*   *État* : les modes supérieurs sont **identifiés et quantifiés** (9 et 10, $2333$/$3009$ Hz, $28\ \%$ du débattement chacun). Réserve connue : à 20 éléments il ne reste que $7{,}7$ à $8{,}8$ éléments par longueur d'onde dans cette bande — c'est peu, et le raffinement reste à faire.
+*   *État* : les modes supérieurs sont **identifiés et quantifiés** (5 et 6, $2271$/$3394$ Hz, $28\ \%$ du débattement chacun). Réserve connue : à 20 éléments il ne reste que $7{,}7$ à $8{,}8$ éléments par longueur d'onde dans cette bande — c'est peu, et le raffinement reste à faire.
+
+> **Correction du 2026-07-27.** Les modes supérieurs étaient identifiés ici comme
+> « 9 et 10, à 2333/3009 Hz ». Ces valeurs ne proviennent d'aucune version de
+> `simulation.jl`, qui place le mode 9 à 8119 Hz et donne pour cette bande les
+> modes 5 et 6, à 2271 et 3394 Hz — à l'identique sur la version du 20 juillet
+> et sur l'actuelle. La réserve de maillage ci-dessus (7,7 à 8,8 éléments par
+> longueur d'onde) désignait d'ailleurs les modes 6-7, non les modes 9-10 :
+> l'analyse se contredisait. La conclusion de fond — l'accord se joue sur des
+> modes parcourus six à neuf fois avant la sortie, non sur le fondamental — est
+> inchangée.
+
 
 ### Étape 2 : Modélisation élastique du tuner-tube — **réalisée et composée dans le cadre unifié**
 *   **Objectif** : Remplacer l'approximation de masse ponctuelle rigide pour les tuners longs.
