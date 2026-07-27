@@ -14,6 +14,23 @@
 #     ∝ h_cg et ∝ 1/m_rifle (cf. physical_h_offset)
 #   - Sortie : θ(L,t), y(L,t), θ̇(L,t), évalués à t_b
 #
+# STATUT — RÉFÉRENCE DES CHIFFRES PUBLIÉS (culasse encastrée). Ce modèle est
+# volontairement conservé comme la référence des grandeurs publiées (wiki, PDF,
+# simulateur web) parce qu'il est PROPRE, PARAMÉTRÉ et REPRODUCTIBLE : ses
+# nombres (h_offset, τ_v, θ̇ à t_b, cible dérivée) sont auto-cohérents et ne
+# dépendent d'aucune géométrie d'arme non mesurée. Sa limite connue est
+# l'encastrement, qui supprime la rotation de corps rigide sous le recul.
+#
+# Le modèle unifié `frame_v2.jl` (structure fusil × balistique couplée × tube
+# élastique) en est le RÉFÉRENT PLUS RICHE : il restaure ce mécanisme et BORNE
+# l'erreur de ce modèle-ci. Il a établi que le « mur » de 3,4-13,8× que la carte
+# encastrée (`sensitivity_map.jl`) chiffrait était en grande partie un artefact
+# de l'encastrement — le manque réel est un quasi-écart de 1,2-2,5× selon
+# l'amortissement (`sensitivity_coupled.jl`). `frame_v2` ne REMPLACE PAS ce
+# fichier : ses chiffres dépendent d'une géométrie d'arme inconnue et ne sont
+# robustes qu'en balayage, non à géométrie figée — il valide et borne, il ne
+# fournit pas une référence chiffrée unique. Voir roadmap.md, § Étape 2.
+#
 # Usage :   julia simulation.jl
 # =============================================================================
 
@@ -35,7 +52,36 @@ end
 # -----------------------------------------------------------------------------
 # 1. PARAMÈTRES PHYSIQUES (SI)
 # -----------------------------------------------------------------------------
-const L         = 0.66          # Longueur canon (26 in)
+# LONGUEUR DE CANON — CHOIX NON TRANCHÉ, ET IL PÈSE LOURD (constat 2026-07-20).
+# 0,66 m = 26". Or les données de littérature qui CONTRAIGNENT la balistique
+# intérieure de ce fichier (Kolbe/Kenchington, §6) décrivent un canon de 28" :
+# « sortie du 28" à 2,3 ms ». Le modèle est donc calé sur des données d'une
+# longueur, et tourne à une autre. Personne ne l'avait relevé.
+#
+# CE QUE CHANGE L'ALIGNEMENT SUR 0,711 m (28"), mesuré à h_offset = 62,5 mm :
+#            L=0,660          L=0,711
+#   τ_v      7,62 µs/(m/s)    8,18
+#   cible    6,88 MOA/ms      6,41      (la cible BAISSE avec la longueur)
+#   θ̇ max    6,38             6,98–7,06 (et l'amplitude MONTE)
+#   verdict  manque 0,51      CIBLE DÉPASSÉE de 0,6
+# Autrement dit : à la longueur que ses propres sources décrivent, le modèle
+# ATTEINT la compensation positive, qu'il n'atteint pas à 26". Le « le modèle
+# n'y arrive à aucun réglage » publié le 2026-07-20 est donc conditionnel à un
+# choix de longueur arbitraire, et pas au modèle.
+#
+# POURQUOI CE N'EST PAS ENCORE FAIT. (a) h_offset = 62,5 mm a lui-même été calé
+# à L = 0,66 ; l'argument n'est pas circulaire (la cible bouge indépendamment du
+# calage) mais il n'est pas propre non plus. (b) Les cotes d'optimum se déplacent
+# beaucoup — 115→75 mm à 100 g, 65→20 mm à 200 g — donc TOUTES les valeurs
+# publiées (wiki, PDF, portage JS, figures) changeraient.
+#
+# (c) LEVÉE le 2026-07-20. J'avais objecté qu'à 711 mm le modèle rend t_b = 2,75 ms
+# contre les 2,3 ms de la source. Vérification faite, c'est LA SOURCE qui est
+# intenable : 2,3 ms sur 28" exige une vitesse moyenne de 97 % de v₀, à +3 % du
+# plancher d'accélération instantanée (cf. le bloc « ATTENTION » du §6). Cette
+# objection ne s'oppose donc plus au passage à 0,711 m — elle disparaît.
+# À trancher explicitement avant toute republication de cotes.
+const L         = 0.66          # Longueur canon (26 in) — cf. bloc ci-dessus
 const D_out     = 0.024         # Diamètre extérieur (profil match)
 const D_in      = 0.0056        # Diamètre intérieur (.22 LR)
 const E         = 200e9         # Module d'Young acier
@@ -137,7 +183,34 @@ const h_cg_ref    = 0.0254      # Hauteur âme ↔ centre de gravité de réf. (
 # Cible balistique et constantes
 const D_target  = 50.0
 const g_accel   = 9.81
-const θdot_optimum_MOAms = 6.0  # Kolbe : optimum à 50 m
+const RAD_TO_MOA = 180 / π * 60
+
+# La cible de compensation θ̇* est DÉRIVÉE, non plus figée à 6,0 (voir plus bas,
+# après la balistique intérieure, où τ_v devient disponible).
+#
+# POURQUOI CE CHANGEMENT (2026-07-20). La constante valait 6,0 MOA/ms, reprise de
+# la mesure au banc de Kolbe. Or la cible se dérive :
+#
+#     θ̇* = g·D / (v₀³ · τ_v)
+#
+# et τ_v est une grandeur que CE modèle prédit (7,62 µs/(m/s) à sa longueur de
+# canon) alors que les 6,0 découlent du τ_v de Kolbe (8,8). Le modèle calculait
+# donc θ̇ avec sa propre cinématique, puis le comparait à une cible issue de la
+# cinématique de quelqu'un d'autre — 15 % d'écart entre les deux, et toutes les
+# cotes publiées sortaient d'un critère « au plus proche de 6,0 » dont le 6,0
+# n'appartenait pas au modèle qui le cherchait.
+#
+# CE QUE ÇA COÛTE, ET IL FAUT LE DIRE. La cible auto-cohérente vaut ~6,9 MOA/ms
+# quand θ̇ CULMINE à 6,38 : elle n'est atteignable à aucun réglage. Ce n'est pas
+# un échec du correctif, c'est ce que le modèle disait déjà sans qu'on l'écoute —
+# l'incohérence masquait le fait que la compensation n'est pas atteinte à ce
+# h_offset. Le critère « au plus proche » retombe alors sur le maximum de θ̇,
+# c'est-à-dire sur le nœud, aux DEUX masses. Voir θdot_reachable ci-dessous.
+#
+# τ_v DÉPEND DE LA LONGUEUR DU CANON (7,07 à 610 mm, 8,74 à 762 mm) : la cible
+# aussi. Elle n'est donc plus une constante de cartouche mais une grandeur
+# cartouche × canon, recalculée pour la géométrie effectivement simulée.
+const θdot_KOLBE_MOAms = 6.0  # repère historique : mesure au banc de Kolbe
 
 # -----------------------------------------------------------------------------
 # 2. MAILLAGE
@@ -320,14 +393,52 @@ end
 # et le défaut corrigé ici ne peut plus réapparaître par dérive d'un paramètre.
 #
 # CE QUE CELA CHANGE DE STATUT. τ_v cesse d'être un paramètre ajusté pour
-# devenir une PRÉDICTION du modèle, donc un test. Prédit : 8,3 µs/(m/s) contre
-# 8,8 mesuré par Kolbe, soit −6 % SANS calage — là où l'ancien φ=0,35 était
-# choisi pour tomber juste. On perd 6 % d'accord nominal et on gagne un test.
+# devenir une PRÉDICTION du modèle, donc un test.
+#
+# CHIFFRES CORRIGÉS LE 2026-07-20. Ce bloc annonçait « 8,3 µs/(m/s), soit −6 %
+# contre les 8,8 de Kolbe ». Les deux moitiés de la phrase étaient fausses :
+#   • la valeur : le modèle prédit 7,62 µs/(m/s) à L = 0,66 m, pas 8,3 ;
+#   • l'écart : τ_v DÉPEND DE LA LONGUEUR DE CANON (7,07 à 610 mm ; 7,62 à 660 ;
+#     8,18 à 711 ; 8,74 à 762). Ce n'est pas une constante de cartouche. Or la
+#     longueur sur laquelle Kolbe mesure 8,8 n'est documentée dans AUCUNE de nos
+#     sources. Un pourcentage d'écart n'est donc pas calculable, et le « −6 % »
+#     comme le « −13 % » publiés ailleurs n'ont jamais été établis.
+# Ce qu'on peut dire : à 762 mm le modèle rend 8,74, soit la valeur de Kolbe à
+# 1 % près. Si son banc utilisait un canon long, il n'y a pas d'écart du tout.
+# C'est une hypothèse, pas un résultat — mais elle est testable, et elle rend
+# l'accord PLUS probable que ne le suggérait la formulation précédente.
 #
 # TENSION NON RÉSOLUE. Aucune paramétrisation essayée ne réconcilie le τ_v
-# mesuré avec le pic de pression SAAMI de la .22 LR (165 MPa) : viser 8,3
-# pousse le pic à ~34 MPa. Trois formulations donnent le même compromis (loi
-# de puissance en temps, détente adiabatique en volume, combustion progressive).
+# mesuré avec le pic de pression SAAMI de la .22 LR (165 MPa). Trois formulations
+# donnent le même compromis (loi de puissance en temps, détente adiabatique en
+# volume, combustion progressive).
+#
+# BALAYAGE SYSTÉMATIQUE (2026-07-20) — 27 combinaisons (V₀, τ_b, n) sur
+# V₀ ∈ {0,1 ; 0,2 ; 0,3} cm³, τ_b ∈ {150 ; 250 ; 400} µs, n ∈ {1,5 ; 2 ; 3}.
+# Deux résultats, l'un négatif et l'autre rassurant.
+#
+# (1) LA POSITION DU PIC EST HORS D'ATTEINTE DE CETTE FAMILLE DE MODÈLES.
+# Aucune combinaison n'approche les 9,4 mm : le meilleur cas rend 8,25 mm, et il
+# effondre le pic à 49,5 MPa (cible ~103). L'antagonisme est structurel — retarder
+# le pic exige de ralentir la combustion, ce qui écrase la pression. La raison de
+# fond apparaît en vitesses moyennes AVANT le pic :
+#       source : 9,4 mm en 0,25 ms  → 37,6 m/s
+#       modèle : 2,6 mm en 0,135 ms → 19,3 m/s   (et 19,8 dans le meilleur cas)
+# La source demande donc une balle DEUX FOIS plus rapide au moment du pic, tout
+# en plaçant ce pic PLUS TARD : autrement dit une pression déjà haute ET soutenue,
+# soit un PLATEAU. Une exponentielle unique ne peut pas produire un plateau. Il y
+# faut une vraie loi de combustion à surface progressive (géométrie de grain).
+# Conclusion : ce n'est pas un réglage à trouver, c'est un terme qui manque.
+#
+# (2) τ_v EST REMARQUABLEMENT INSENSIBLE À CES PARAMÈTRES : 7,59 à 8,24 µs/(m/s)
+# sur TOUT le balayage, soit une cible comprise entre 6,36 et 6,91 MOA/ms. La
+# grandeur qui gouverne la compensation ne dépend donc quasiment pas de la
+# paramétrisation de la balistique intérieure — elle est portée par la
+# conservation de l'impulsion, qui est exacte par construction. C'est ce qui
+# permet de continuer à travailler malgré (1).
+# RÉSERVE À GARDER EN TÊTE : cette dispersion de cible (±4 %) est du même ordre
+# que l'effet de longueur invoqué pour passer à 28" (6,88 → 6,41). La marge qu'on
+# y gagne dépasse la dispersion, mais pas d'un ordre de grandeur.
 # On retient ici le τ_v, qui est mesuré et qui gouverne la compensation ; le pic
 # est une conséquence, et il est bas. À reprendre avec un vrai modèle de
 # combustion si la question devient critique.
@@ -342,6 +453,25 @@ end
 #   • pic ~15 000 psi = 103 MPa  (et NON les 165 MPa de la limite SAAMI, qui
 #     est un maximum admissible et non une valeur de travail — erreur commise
 #     lors du premier calage)
+#
+# ATTENTION (2026-07-20) : LA TROISIÈME LIGNE EST INEXPLOITABLE. Vérifiée pour
+# elle-même, elle n'est compatible avec AUCUNE .22 LR à 318 m/s :
+#   • « 19 pouces à 1,5 ms » impose une vitesse MOYENNE de 322 m/s DEPUIS L'ARRÊT,
+#     donc supérieure à la vitesse de bouche simulée. Impossible.
+#   • « sortie du 28" à 2,3 ms » impose une moyenne de 309 m/s, soit 97 % de v₀.
+#     Or le plancher physique absolu — accélération INSTANTANÉE à v₀ — vaut
+#     L/v₀ = 2,24 ms. L'annonce est à +3 % de ce plancher : elle exige une balle
+#     qui atteint sa vitesse finale quasi immédiatement.
+#   • les deux ensemble impliquent un pic en âme > 322 m/s puis une chute à
+#     < 286 m/s à la bouche, soit −11 % sur les 9 derniers pouces, là où la perte
+#     réelle d'une .22 LR se compte en pourcents.
+# Conclusion : ces jalons ont été mal transcrits, ou décrivent un autre couple
+# arme/munition. Le modèle rend 81 % de v₀ en moyenne (régime usuel 60-80 %) :
+# c'est LUI qui est plausible. NE PAS le recalibrer sur ces trois nombres.
+# Les deux premières lignes (pic de pression) restent utilisables et sont, elles,
+# cohérentes en ordre de grandeur ; le modèle y répond mal (pic à 0,135 ms et
+# 2,6 mm contre 0,25 ms et 9,4 mm) — ce désaccord-là est réel et ouvert.
+#
 # τ_b = 150 µs place la fin de combustion au bon endroit ; le modèle rend alors
 # un pic de 99 MPa (−3 % sur la cible), et surtout retrouve la STRUCTURE DE
 # SIGNE de Kolbe : canon nu négatif, accord ramenant positif. À τ_b = 600 µs,
@@ -435,6 +565,28 @@ function _projectile_kinematics(v_muzzle, L)
         p_peak = maximum(tr.ps),
     )
 end
+
+# -----------------------------------------------------------------------------
+# CIBLE DE COMPENSATION, DÉRIVÉE DE LA CINÉMATIQUE DU MODÈLE
+#
+#     θ̇* = g·D / (v₀³ · τ_v)
+#
+# Définie ICI et non avec les autres constantes : elle a besoin de τ_v, que la
+# balistique intérieure ci-dessus produit. Les fonctions de balayage ne la lisent
+# qu'à l'appel, l'ordre de définition leur est donc indifférent.
+#
+# La comparaison avec θdot_KOLBE_MOAms est le TEST : les deux ne coïncident que
+# si le modèle retrouve le τ_v mesuré — auparavant invisible, la cible étant figée
+# sur la cinématique de Kolbe pendant que θ̇ sortait de celle du modèle.
+#
+# ATTENTION à ne pas lire l'écart comme une erreur du modèle : la cible varie de
+# 7,42 (610 mm) à 6,00 MOA/ms (762 mm) par le seul effet de la longueur de canon.
+# L'écart mesure donc AUSSI la différence de longueur avec le banc de Kolbe, qui
+# n'est pas documentée. Cf. le bloc « CHIFFRES CORRIGÉS » du §6.
+# -----------------------------------------------------------------------------
+θdot_target_MOAms(τ_v) = g_accel * D_target / (v_muzzle^3 * τ_v) * RAD_TO_MOA / 1000
+
+const θdot_optimum_MOAms = θdot_target_MOAms(projectile_kinematics(v_muzzle, L).τ_v)
 
 # -----------------------------------------------------------------------------
 # 7. EXCITATION
@@ -951,8 +1103,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
     const M_TUNER_LOW  = 0.100
     const M_TUNER_HIGH = 0.200
     # Plage étendue à 200 mm le 2026-07-19. Avec k dérivé de la masse, l'optimum
-    # à 100 g tombe à 100 mm, soit exactement le dernier point de l'ancienne plage
-    # (0-100 mm) : un optimum au bord n'en est pas un. Un premier élargissement à
+    # à 100 g tombait alors à 100 mm, soit exactement le dernier point de l'ancienne
+    # plage (0-100 mm) : un optimum au bord n'en est pas un. (Il vaut 135 mm depuis
+    # la refonte en balistique intérieure couplée ; le raisonnement d'élargissement
+    # ci-dessous porte sur l'état d'alors, mais sa conclusion vaut a fortiori.)
+    # Un premier élargissement à
     # 150 mm rendait l'optimum intérieur mais tronquait encore la TOLÉRANCE (la
     # bande à moins de 1 MOA/ms se refermait au-delà) — on aurait publié une
     # largeur de plage fixée par la fenêtre de calcul, non par la physique. À
@@ -1023,8 +1178,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # révision de l'amortissement, qui a déplacé l'optimum à 135 mm.
     d_ref = result_pos_low[argmin([abs(r.θdot_MOAms - θdot_optimum_MOAms)
                                    for r in result_pos_low])].d_overhang
-    @printf("Effet à RÉGLAGE FIXÉ (tuner %d g à %.0f mm, l'optimum courant), cible 6,0 :\n",
-            round(Int, M_TUNER_LOW*1e3), d_ref*1e3)
+    @printf("Effet à RÉGLAGE FIXÉ (tuner %d g à %.0f mm, l'optimum courant), cible %.2f :\n",
+            round(Int, M_TUNER_LOW*1e3), d_ref*1e3, θdot_optimum_MOAms)
     println()
     @printf("  %6s | %8s | %10s | %s\n", "ΔT", "f₁ (Hz)", "θ̇(t_b)", "traînée résiduelle à 50 m")
     println("  " * "-"^62)

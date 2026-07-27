@@ -4,6 +4,9 @@ title: |
   De la théorie balistique à la simulation par éléments finis
 ---
 
+::: center
+:::
+
 # Introduction : principes de la compensation positive {#sec:intro}
 
 Cette première section présente le *pourquoi* et le *comment* de la
@@ -680,7 +683,15 @@ $\dot\theta_\text{out}^\star$ positif : la bouche doit donc se relever
 $D=50$ m, $v_0 = 318$ m/s et $\tau_v = 8{,}8\,\mu$s/(m/s) :
 $$\dot\theta_\text{out}^\star \;\approx\; 1{,}73\ \text{mrad/ms} \;\approx\; 5{,}96\ \text{MOA/ms},$$
 à comparer aux $6{,}0$ MOA/ms mesurés expérimentalement par Kolbe :
-*l'accord est meilleur que* $1\,\%$. Ce n'est pas fortuit --- les deux
+*l'accord est meilleur que* $1\,\%$. **Cet accord vaut pour les chiffres
+de Kolbe, non pour ceux du modèle** : il confronte la formule alimentée
+par le $\tau_v$ *mesuré* ($8{,}8$) au $6{,}0$ *mesuré* au banc, deux
+chemins indépendants qui se recoupent. Le simulateur, lui, prédit
+$\tau_v = 7{,}6$, et la même formule lui rend alors $6{,}88$ MOA/ms.
+Notons enfin que $\tau_v$ dépend de la longueur du canon ($7{,}07$ à
+$610$ mm, $8{,}74$ à $762$ mm) : ce n'est pas une constante de
+cartouche, et la longueur sur laquelle Kolbe a mesuré $8{,}8$ n'est
+documentée dans aucune de nos sources. Ce n'est pas fortuit --- les deux
 chemins sont indépendants. Kolbe multiplie sa chute naturelle mesurée
 ($0{,}016$ MOA par ft/s) par sa sensibilité de temps de sortie ($375$
 ft/s par ms) ; nous partons de la cinématique balistique
@@ -806,12 +817,14 @@ vers l'extraction de la composante rotationnelle au nœud terminal.
 
 Le simulateur en `Julia` associé à ce document (`simulation.jl`)
 implémente l'ensemble du formalisme : assemblage MEF, encastrement,
-tuner, balistique interne (profil « burnout » : accélération sur une
-fraction $\phi=0{,}35$ du canon, puis coast, calé sur $\tau_v$ de
-Kolbe), excitation par moment de recul à la culasse
+tuner, balistique intérieure *couplée* (la pression est intégrée depuis
+une loi de combustion, de sorte que la conservation de la quantité de
+mouvement est exacte par construction ; le profil « burnout » calé sur
+$\tau_v$ qu'employaient les versions antérieures est abandonné depuis le
+19 juillet 2026), excitation par moment de recul à la culasse
 $M(t) = p(t)\,A_\text{bore}\,h_\text{offset}$, charge mobile du
 projectile, amortissement de Rayleigh et schéma de Newmark-$\beta$. Le
-bras de levier $h_\text{offset}$ y vaut $16{,}5$ mm. C'est une grandeur
+bras de levier $h_\text{offset}$ y vaut $62{,}5$ mm. C'est une grandeur
 *effective* et non une cote : elle situe le modèle à l'optimum de
 compensation pour un réglage de tuner compris dans la course réelle. Son
 référent physique est donné par la seule mesure publiée de l'excitation
@@ -820,22 +833,34 @@ sur l'anneau de culasse d'une .270 Win, chapitre 4) : le moment
 *appliqué* qu'il rapporte, $\sim 1500$ in-lb, correspond à un bras de
 $11{,}9$ mm, soit $\sim 9$ à $12$ mm une fois reporté en .22 LR par
 [\[eq:hoffset_phys\]](#eq:hoffset_phys){reference-type="eqref"
-reference="eq:hoffset_phys"}. Le rapport, de l'ordre de $1{,}4$ à
-$1{,}8$, *chiffre* ce que l'ossature encastrée omet --- la rotation
-d'ensemble de l'arme sous le recul. Adopter au contraire la valeur
-physique dans le modèle amputé le rend inutilisable : il plafonne alors
-à $3{,}5$ MOA/ms et n'atteint plus jamais l'optimum de $6{,}0$, en masse
-comme en position. La seule grandeur confrontée à la mesure reste
+reference="eq:hoffset_phys"}. Le rapport, de l'ordre de $\mathbf{6}$,
+*chiffre* ce que l'ossature encastrée omet --- la rotation d'ensemble de
+l'arme sous le recul. Adopter au contraire la valeur physique dans le
+modèle amputé le rend inutilisable : la cible dérivée ($6{,}88$ MOA/ms)
+n'est plus approchée, ni en masse ni en position. Le balayage
+systématique de `sensitivity_map.jl` généralise ce constat : sur quatre
+longueurs de canon et cinq amortissements, le bras de levier *requis*
+pour atteindre la cible reste compris entre $3{,}4$ et $13{,}8$ fois la
+cote physique. Aucun réglage ne referme cet écart, ce qui désigne un
+mécanisme absent plutôt qu'un paramètre mal choisi. Ce diagnostic a
+depuis été affiné (`sensitivity_coupled.jl`) : rendre ce mécanisme au
+modèle --- avec le tube du tuner traité en poutre élastique --- abaisse
+l'écart à $1{,}2$--$2{,}5$ fois selon l'amortissement, un quasi-manque
+et non un mur, la cible restant toutefois inatteinte à tout réglage
+physique. La seule grandeur confrontée à la mesure reste
 $\dot\theta(L,t_b)$.
 
 ![Réponse transitoire simulée pour la configuration nominale (tuner
-200 g, $h_\text{offset} = 16{,}5$ mm). De haut en bas : déflexion
-$y(L,t)$, angle de bouche $\theta(L,t)$, et vitesse angulaire
-$\dot\theta(L,t)$. Le trait rouge pointillé marque $t_b = 2{,}80$ ms
-(profil burnout) ; le trait vert pointillé indique la cible Kolbe (6
-MOA/ms). À $t_b$, le modèle donne $\dot\theta = +1{,}8$ MOA/ms : du bon
-signe (montant, tuner installé) mais d'amplitude sous la cible --- voir
-la réserve ci-dessous.](plot_tir_nominal.png){#fig:reponse_transitoire
+200 g monté à la bouche, $h_\text{offset} = 62{,}5$ mm). De haut en bas
+: déflexion $y(L,t)$, angle de bouche $\theta(L,t)$, et vitesse
+angulaire $\dot\theta(L,t)$. Le trait rouge pointillé marque
+$t_b = 2{,}57$ ms (balistique intérieure couplée) ; le trait vert
+pointillé indique la cible *dérivée* ($6{,}88$ MOA/ms). À $t_b$, cette
+configuration sans porte-à-faux donne $\dot\theta = -0{,}32$ MOA/ms ---
+le tuner a bien redressé le canon nu, qui vaut $-2{,}01$, mais le signe
+reste négatif : c'est le porte-à-faux, non la seule masse, qui amène
+$\dot\theta$ du bon côté (jusqu'à $+6{,}38$ à $65$ mm). Voir la réserve
+ci-dessous.](plot_tir_nominal.png){#fig:reponse_transitoire
 width="0.85\\linewidth"}
 
 ![Balayage paramétrique sur la masse du tuner $m_t \in [0, 400]$ g
@@ -851,35 +876,47 @@ par le quotient de Rayleigh, équation
 reference="eq:dwdmt"}).](plot_balayage_tuner.png){#fig:balayage_tuner
 width="0.85\\linewidth"}
 
-#### Le profil de balistique interne reproduit désormais $\tau_v$.
+#### Ce que le modèle prédit pour $\tau_v$, et ce qu'il ne faut pas lui faire dire.
 
-Le profil « burnout » (accélération constante sur une fraction
-$\phi = 0{,}35$ du canon, puis coast) réalise
-$\tau_v = -\partial t_b/\partial v_0 = (1+\phi)\,L/v^2 = 8{,}8\ \mu$s/(m/s),
-exactement la valeur mesurée par Kolbe et utilisée dans le critère
-[\[eq:dthetaopt\]](#eq:dthetaopt){reference-type="eqref"
-reference="eq:dthetaopt"}. L'ancien lag exponentiel
-$v = v_m(1-e^{-t/\tau})$ était *front-loaded* (toute l'accélération à la
-culasse, puis coast) : sa sensibilité plafonnait à
-$L/v^2 \approx 6{,}5\ \mu$s, soit 35 % trop faible, la balle sortant
-trop tôt ($t_b = 2{,}46$ contre $2{,}80$ ms). La chaîne cinématique de
-Kolbe --- chute naturelle, sensibilité du temps de sortie, taux requis
---- est ainsi *entièrement* reproduite (script `kolbe_validation.jl` :
-$0{,}016 \times 375 = 6{,}0$ MOA/ms retrouvé à $1\,\%$).
+La balistique intérieure est désormais *couplée* : la pression est
+intégrée depuis une loi de combustion, la conservation de la quantité de
+mouvement est exacte par construction, et
+$\tau_v = -\partial t_b/\partial v_0$ cesse d'être un paramètre calé
+pour devenir une *prédiction*. Le modèle rend
+$\tau_v = 7{,}62\ \mu$s/(m/s) à sa longueur de canon ($660$ mm) et
+$t_b = 2{,}57$ ms. Il ne faut pas confondre cette valeur avec les
+$8{,}8$ mesurés par Kolbe : d'une part $\tau_v$ *dépend de la longueur
+de canon* ($7{,}07$ à $610$ mm, $8{,}74$ à $762$), or la longueur du
+banc de Kolbe n'est documentée nulle part ; d'autre part le profil «
+burnout » des versions antérieures, qui *semblait* reproduire $8{,}8$, y
+parvenait en étant calé pour cela --- c'est précisément l'erreur de
+cible empruntée corrigée dans le cadre de statut en tête de ce document.
+Ce qui est *réellement* validé, c'est la chaîne cinématique de Kolbe sur
+*ses* chiffres, par deux chemins indépendants (script
+`kolbe_validation.jl` : $0{,}016 \times 375 = 6{,}0$ MOA/ms retrouvé à
+$1\,\%$) --- une validation de la *théorie*, non de notre simulateur.
 
-Ce qui demeure hors de portée est l'*amplitude absolue*. Au temps de
-sortie correct $t_b = 2{,}80$ ms, le modèle encastré donne
-$\dot\theta(L,t_b)$ du bon *signe* --- négatif pour le canon nu
-($\approx -1{,}1$ MOA/ms, bouche descendante, comme les $-9{,}4$ mesurés
-par Kolbe), ramené vers le positif par la masse de bouche ($+2{,}6$ à
-400 g) --- mais d'amplitude environ trois fois trop faible pour
-atteindre les $6{,}0$ MOA/ms sans amplitude de vibration
-invraisemblable. C'est le symptôme, déjà rencontré, de la *rotation de
-corps rigide* absente du modèle encastré, non un défaut du profil
-balistique. Il est d'ailleurs notable que la correction du profil
-*améliore* l'accord qualitatif : à l'ancien $t_b = 2{,}5$ ms le canon nu
-ressortait *montant* (mauvais signe) ; au temps correct il ressort
-*descendant*, conforme à Kolbe.
+Ce qui demeure hors de portée est l'*amplitude absolue*. À
+$t_b = 2{,}57$ ms, le modèle encastré donne $\dot\theta(L,t_b)$ du bon
+*signe* --- négatif pour le canon nu ($-2{,}01$ MOA/ms, bouche
+descendante, comme les $-9{,}4$ mesurés par Kolbe), ramené vers le
+positif par la masse de bouche ($-0{,}32$ à 200 g, $+1{,}6$ à 400 g
+posés sans porte-à-faux) puis porté à $+6{,}38$ en vissant le tuner à
+$65$ mm --- mais insuffisant pour atteindre la cible *dérivée* de
+$6{,}88$ MOA/ms. Et ce déficit n'est pas un défaut de réglage : le
+balayage systématique de `sensitivity_map.jl`, sur quatre longueurs de
+canon et cinq amortissements, montre qu'atteindre la cible exigerait un
+bras de levier de $3{,}4$ à $13{,}8$ fois sa valeur physique, *sans
+exception*. C'est le symptôme, déjà rencontré, de la *rotation de corps
+rigide* absente du modèle encastré, non un défaut du profil balistique.
+Un modèle qui *contient* cette rotation (`sensitivity_coupled.jl`) le
+confirme et le quantifie : le manque n'y est plus que de $1{,}2$ à
+$2{,}5$ fois selon l'amortissement --- le « $3{,}4$--$13{,}8$ » mesurait
+donc surtout ce que l'encastrement omet. Il est d'ailleurs notable que
+le passage à la balistique couplée *améliore* l'accord qualitatif : à
+l'ancien $t_b \approx 2{,}5$ ms le canon nu ressortait *montant*
+(mauvais signe) ; au temps correct il ressort *descendant*, conforme à
+Kolbe.
 
 Ce déficit d'amplitude est depuis *levé* par le modèle du fusil libre
 sur ses sacs (`harral_rifle_sweep.jl`, `kolbe_amplitude.jl`) : avec le
@@ -938,13 +975,14 @@ width="0.85\\linewidth"}
 Trois résultats se dégagent. D'abord, *la position suffit à accorder* :
 nul besoin de changer de poids, la course du tuner traverse toute la
 plage utile. Ensuite, *le poids détermine où sur la course*, non la
-possibilité d'accorder : la cible est atteinte vers $d \approx 90$ mm à
-100 g et vers $d \approx 65$ mm à 200 g --- plus la masse est légère,
-plus le sweet spot est éloigné de la bouche. Enfin, *l'optimum est
-large*, et d'autant plus que la masse est élevée : la zone à moins de 1
-MOA/ms de la cible couvre $\sim 30$ mm de course à 100 g et $\sim 65$ mm
-à 200 g. Masse et position forment ainsi un unique *espace d'accord*, le
-poids fixant la courbe et la position accordant dessus.
+possibilité d'accorder : $\dot\theta$ s'approche au plus près de la
+cible vers $d \approx 115$ mm à 100 g et vers $d \approx 65$ mm à 200 g
+--- sans l'atteindre, le maximum de $6{,}38$ restant sous les $6{,}88$
+requis --- plus la masse est légère, plus le sweet spot est éloigné de
+la bouche. Enfin, *l'optimum est large* dans les deux cas : la zone à
+moins de 1 MOA/ms de la cible couvre $\sim 75$ mm de course à 100 g
+comme à 200 g. Masse et position forment ainsi un unique *espace
+d'accord*, le poids fixant la courbe et la position accordant dessus.
 
 #### Ordres de grandeur des masses employées.
 
@@ -974,37 +1012,51 @@ reference="fig:balayage_position"} encadrent ces deux régimes.
 
 La section [5](#sec:cinematique){reference-type="ref"
 reference="sec:cinematique"} énonce la condition de compensation sous
-deux formes équivalentes : un taux angulaire de $6$ MOA/ms, mais aussi
-et surtout une *sortie au voisinage d'un nœud temporel ascendant*, là où
-$\theta = 0$ et où $\dot\theta$ est maximal. Les deux formes coïncident
-par quadrature. Régler sur le *chiffre* n'y conduit pourtant pas
-toujours, et le balayage ci-dessus en fournit un contre-exemple. Tant
-que l'excitation était supposée identique à chaque coup, l'écart restait
-sans conséquence visible ; dès lors qu'elle varie (point 12), il se
-paie, la sensibilité à cette variabilité étant proportionnelle à l'angle
-*absolu* $\theta(t_b)$. À 200 g, le modèle plafonne à $5{,}91$ MOA/ms et
-n'atteint jamais $6{,}0$ :  au plus proche de la cible  retombe donc sur
-le maximum, c'est-à-dire sur le nœud, et le réglage de $65$ mm est déjà
-le bon. À 100 g au contraire, $\dot\theta$ franchit $6{,}0$ vers $95$ mm
-et culmine à $6{,}20$ vers $110$ mm :  au plus proche de $6{,}0$ 
-retient donc $90$ mm, *avant* le maximum, à $138$ $\mu$rad du neutre au
-lieu de $13$. Le simulateur de variabilité (`variability.jl`) chiffre
-l'écart à un **facteur 3** sur la dispersion prédite ($0{,}73$ contre
-$0{,}24$ mm d'écart-type à 50 m), l'optimum se déplaçant à $\sim 110$ mm
-(fourchette et non cote : la position du nœud dépend de l'inertie propre
-du tuner, donc de son architecture --- le modèle décrit ici un ensemble
-tube, rayon de giration 5 cm ; la dispersion atteinte au nœud, elle,
-reste $\sim 0{,}23$ mm quelle que soit cette inertie). Un tel
-porte-à-faux n'est réalisable qu'avec l'architecture à tube
-(Starik/Centra, tubes de 19 à 36 cm), non avec un corps vissé ; la
-flèche statique ajoutée est négligeable ($0{,}04$ mm) et la liaison
-demeure rigide, une masse de 100 g sur 10 cm de tube carbone résonnant
-vers 600 Hz, bien au-dessus du mode fondamental. Les $90$ mm avancés
-plus haut sont donc un *artefact de méthode*, non un optimum. Ce
+deux formes : un taux angulaire cible, mais aussi et surtout une *sortie
+au voisinage d'un nœud temporel ascendant*, là où $\theta = 0$ et où
+$\dot\theta$ est maximal. Une version antérieure de ce document
+affirmait ici que les deux formes *coïncident par quadrature*. **C'est
+faux, et l'erreur mérite d'être expliquée** : la quadrature est réelle,
+mais elle porte sur le *temps* --- à porte-à-faux fixé, $\dot\theta(t)$
+est bien maximal quand $\theta(t)$ passe par zéro. Elle ne dit rien du
+balayage en *position*, qui change à la fois l'amplitude et la phase du
+système. Le balayage le montre : $\dot\theta$ culmine vers $115$ mm
+quand $\theta$ ne s'annule qu'à $147$ mm. C'était une conflation entre
+deux quadratures, l'une temporelle et vraie, l'autre positionnelle et
+fausse --- et c'est elle qui faisait croire que régler sur le chiffre
+revenait à régler sur le nœud. Tant que l'excitation était supposée
+identique à chaque coup, l'écart restait sans conséquence visible ; dès
+lors qu'elle varie (point 12), il se paie, la sensibilité à cette
+variabilité étant proportionnelle à l'angle *absolu* $\theta(t_b)$. La
+cible dérivée vaut $6{,}88$ MOA/ms et $\dot\theta$ culmine à $6{,}38$ :
+elle n'est atteignable à *aucun* réglage, de sorte que  au plus proche 
+retombe sur le *maximum* de $\dot\theta$ --- $115$ mm à 100 g, $65$ mm à
+200 g --- qui n'est pas le nœud. Le simulateur de variabilité
+(`variability.jl`) chiffre l'écart à un **facteur 2,5** à 100 g et
+**2,3** à 200 g sur la dispersion prédite ($0{,}94$ contre $0{,}38$ mm
+d'écart-type à 50 m à 100 g), le minimum de dispersion se trouvant à
+$\sim 140$ mm (fourchette et non cote : la position du nœud dépend de
+l'inertie propre du tuner, donc de son architecture --- le modèle décrit
+ici un ensemble tube à paroi mince, dont le rayon de giration découle de
+la masse installée, soit $\sim 2{,}8$ cm à 100 g et $\sim 5{,}0$ cm à
+200 g). Cette cote a déjà bougé plusieurs fois : une version antérieure
+annonçait $110$ mm, l'inertie du tuner y étant traitée comme une
+constante indépendante de la masse installée. Un tel porte-à-faux n'est
+réalisable qu'avec l'architecture à tube (Starik/Centra, tubes de 19 à
+36 cm), non avec un corps vissé ; la flèche statique ajoutée est
+négligeable (quelques centièmes de millimètre). En revanche **la liaison
+ne peut plus être tenue pour rigide** : le tube résonne vers $600$ Hz,
+ce qui est bien au-dessus du mode fondamental ($35$ Hz) --- ce dont une
+version antérieure concluait à la rigidité --- mais *en dessous* de la
+bande de $2$--$3$ kHz qui gouverne l'accord
+(section [4](#sec:modale){reference-type="ref" reference="sec:modale"}).
+Dans la bande qui compte, le tube possède donc sa propre dynamique, et
+le modéliser comme une masse ponctuelle affectée d'une inertie devient
+injustifié : limite **non résolue**, propre à l'architecture à tube. Ce
 résultat conforte par ailleurs le *ladder tune* : le tireur qui balaie
 la course et retient le meilleur groupement trouve le nœud sans le
-calculer, là où viser un chiffre de taux angulaire peut l'en écarter.
-*Statut* : le mauvais placement découle du critère de la
+calculer, là où viser un chiffre de taux angulaire l'en écarte. *Statut*
+: le mauvais placement découle du critère de la
 section [5](#sec:cinematique){reference-type="ref"
 reference="sec:cinematique"} et se lit sur le balayage ; son *coût*
 chiffré dépend en revanche du modèle de variabilité et de son paramètre
@@ -1018,8 +1070,8 @@ correspondent, sur la courbe de la
 figure [7](#fig:balayage_position){reference-type="ref"
 reference="fig:balayage_position"}, à $\sim 0{,}01$ MOA/ms par tour près
 de l'optimum (jusqu'à $\sim 0{,}04$ dans la partie raide). La largeur de
-l'optimum, $\sim 90$ tours, explique qu'un *ladder tune* converge sans
-exiger une précision au tour près.
+l'optimum, $\sim 150$ à $190$ tours, explique qu'un *ladder tune*
+converge sans exiger une précision au tour près.
 
 # Conclusions pratiques pour le tireur {#sec:conclusions}
 
@@ -1280,16 +1332,17 @@ gravité. Avant correction, la dispersion calculée *décroissait* quand la
 bouche s'alourdissait ($0{,}148''$ nu $\to 0{,}085''$ à 16 oz) là où
 Harral la donne *croissante* ($0{,}091'' \to 0{,}183''$) : la conclusion
 physique opposée. Une fois l'amplitude ramenée à une valeur réaliste et
-la balistique interne corrigée (profil burnout, $t_b = 2{,}69$ ms),
-l'inversion disparaît et la dispersion se resserre autour de la valeur
-*non compensée* --- $0{,}159 / 0{,}168 / 0{,}170 / 0{,}169''$ pour les
-quatre masses, toutes voisines de $0{,}173''$, sans trace de la
-structure de Harral. Le système étant linéaire, ce résultat était
-prévisible : ce qui manque n'est pas un facteur d'échelle mais la
-*rotation de corps rigide* du fusil au recul. Il s'agit donc d'une
-lacune de modélisation, non d'une erreur d'implémentation --- lacune
-levée depuis par le modèle du fusil libre
-(section [5.5](#sec:validation_num){reference-type="ref"
+la balistique interne corrigée (profil « burnout » alors en vigueur,
+$t_b = 2{,}69$ ms ; la conclusion est insensible au passage ultérieur à
+la balistique couplée), l'inversion disparaît et la dispersion se
+resserre autour de la valeur *non compensée* ---
+$0{,}159 / 0{,}168 / 0{,}170 / 0{,}169''$ pour les quatre masses, toutes
+voisines de $0{,}173''$, sans trace de la structure de Harral. Le
+système étant linéaire, ce résultat était prévisible : ce qui manque
+n'est pas un facteur d'échelle mais la *rotation de corps rigide* du
+fusil au recul. Il s'agit donc d'une lacune de modélisation, non d'une
+erreur d'implémentation --- lacune levée depuis par le modèle du fusil
+libre (section [5.5](#sec:validation_num){reference-type="ref"
 reference="sec:validation_num"}).
 
 *Précisions de méthode.* La ligne « bouche rigide » ($0{,}173''$)

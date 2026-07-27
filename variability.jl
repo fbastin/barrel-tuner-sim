@@ -146,11 +146,16 @@ println()
 # Il a bougé plusieurs fois (100 → 110 → 135 mm) au fil des révisions du
 # 2026-07-19 ; le coder en dur laissait ce script décrire un réglage périmé.
 const M_DOC = 0.100
-const D_DOC = let ds = 0.0:0.005:0.20
-    rs = [simulate_shot(M_DOC; d_overhang = d, h_offset = H_OFFSET_EFF,
+# Le critère « au plus proche de θ̇ = 6,0 » appliqué au balayage. Rendu FONCTION
+# de la masse : la cote du tuner 200 g était restée un littéral en dur (0.085)
+# pendant que celle du 100 g se recalculait, si bien qu'une révision du modèle
+# n'en corrigeait qu'une des deux.
+function d_criterion(m; ds = 0.0:0.005:0.20)
+    rs = [simulate_shot(m; d_overhang = d, h_offset = H_OFFSET_EFF,
                         verbose = false).θdot_MOAms for d in ds]
     ds[argmin([abs(x - θdot_optimum_MOAms) for x in rs])]
 end
+const D_DOC = d_criterion(M_DOC)
 const LBL_BARE  = "canon nu (sans tuner)"
 const LBL_TUNED = @sprintf("accordé (%d g à %d mm)", round(Int, M_DOC*1e3), round(Int, D_DOC*1e3))
 configs = [
@@ -214,7 +219,8 @@ end
 # la section du tube étant calée pour redonner k = 5,02 cm à cette masse).
 # Les plages sont étendues en conséquence pour encadrer le nœud, qui recule lui
 # aussi (110 → 120 mm à 100 g).
-scans = [(0.100, 0.080:0.005:0.180, D_DOC), (0.200, 0.040:0.005:0.130, 0.085)]
+scans = [(0.100, 0.080:0.005:0.180, D_DOC),
+         (0.200, 0.040:0.005:0.130, d_criterion(0.200; ds = 0.040:0.005:0.130))]
 bests = Dict{Float64,Any}()
 
 for (m, ds, d_pub) in scans
@@ -233,7 +239,7 @@ for (m, ds, d_pub) in scans
     println("-"^78)
     b = rows[argmin([r.sd for r in rows])]
     pub = rows[argmin([abs(r.d - d_pub) for r in rows])]
-    bests[m] = (; best = b, pub)
+    bests[m] = (; best = b, pub, rows)
     @printf("Minimum de dispersion à %.0f mm (%.2f mm) contre %.2f mm au réglage publié\n",
             b.d * 1e3, b.sd, pub.sd)
     @printf("de %.0f mm — facteur %.1f. L'angle absolu y passe de %.0f à %.0f µrad.\n\n",
@@ -242,28 +248,73 @@ end
 
 best = bests[0.100].best
 best_d, best_sd = best.d, best.sd
-println("LE CRITÈRE, ET POURQUOI LES DEUX MASSES NE RÉAGISSENT PAS PAREIL")
+println("LE CRITÈRE, ET POURQUOI LES DEUX NE COÏNCIDENT PAS")
 println("-"^78)
-println("θ et θ̇ sont en QUADRATURE : θ̇ est maximal là où θ traverse zéro. Les deux")
-println("critères ne s'opposent donc pas, ils coïncident — le réglage qui compense le")
-println("mieux est aussi le moins sensible à l'aléa d'excitation. Le critère unifié")
-println("s'énonce : faire sortir la balle quand la bouche est à son angle NEUTRE.")
+println("Une version antérieure affirmait ici que les deux critères — viser θ̇ maximal,")
+println("viser l'angle neutre θ = 0 — COÏNCIDENT, « θ et θ̇ étant en quadrature ». La")
+println("quadrature est réelle, mais elle porte sur le TEMPS : à porte-à-faux fixé,")
+println("θ̇(t) est bien maximal quand θ(t) passe par zéro. Elle ne dit RIEN du balayage")
+println("en POSITION, qui change à la fois l'amplitude et la phase du système. Les")
+println("tables ci-dessus le montrent : θ̇ culmine bien avant que θ ne s'annule.")
+println("C'était une conflation entre deux quadratures, l'une temporelle et vraie,")
+println("l'autre positionnelle et fausse.")
 println()
-println("Reste que viser θ̇ = 6,0 EXACTEMENT n'y conduit pas toujours. Les chiffres")
-println("ci-dessous sont RECALCULÉS à chaque exécution : les figer en dur les aurait")
-println("laissés mentir à la première révision du modèle (ce qui est arrivé).")
+println("Les chiffres ci-dessous sont RECALCULÉS à chaque exécution : les figer en dur")
+println("les aurait laissés mentir à la première révision du modèle (ce qui est arrivé).")
+@printf("La cible est désormais DÉRIVÉE de la cinématique du modèle : %.2f MOA/ms\n",
+        θdot_optimum_MOAms)
+@printf("(contre %.1f repris de Kolbe, soit %+.0f %%). Elle n'est atteignable à AUCUN\n",
+        θdot_KOLBE_MOAms, 100*(θdot_optimum_MOAms/θdot_KOLBE_MOAms-1))
+println("réglage — θ̇ plafonne en dessous — de sorte que « au plus proche » retombe sur")
+println("le MAXIMUM de θ̇ aux deux masses. Ce n'est pas un artefact : c'est le modèle")
+println("qui dit que la compensation n'est pas atteinte à ce h_offset.")
 let b2 = bests[0.200], b1 = bests[0.100]
-    @printf("  • à 200 g, θ̇ plafonne à %.2f et n'atteint jamais 6,0 ; « au plus proche »\n",
-            b2.pub.θdot)
-    @printf("    retombe donc sur le maximum, tout près du passage par zéro. Le %.0f mm\n",
-            b2.pub.d * 1e3)
-    @printf("    publié est déjà optimal — facteur %.1f, rien à corriger.\n",
-            b2.pub.sd / b2.best.sd)
-    @printf("  • à 100 g, θ̇ franchit 6,0 puis continue de monter jusqu'à %.2f. Viser la\n",
-            b1.best.θdot)
-    @printf("    valeur nominale arrête donc AVANT le maximum, et laisse l'angle absolu\n")
-    @printf("    à %.0f µrad au lieu de %.0f. D'où le facteur %.1f.\n",
+    # La formulation elle-même est DÉRIVÉE du balayage. Elle affirmait « θ̇
+    # plafonne et n'atteint jamais 6,0 » : vrai de l'ancien modèle, faux du
+    # nouveau, où θ̇ culmine au-delà de 6,0 et redescend. Seuls les nombres
+    # étaient recalculés, si bien qu'une phrase fausse encadrait des chiffres
+    # justes — et 5,98, qui n'est que la valeur AU POINT PUBLIÉ, se lisait
+    # comme un maximum.
+    θdot_max2 = maximum(r.θdot for r in b2.rows)
+    if θdot_max2 <= θdot_optimum_MOAms
+        @printf("  • à 200 g, θ̇ plafonne à %.2f et n'atteint jamais la cible de %.2f ;\n",
+                θdot_max2, θdot_optimum_MOAms)
+        @printf("    « au plus proche » retombe donc sur le MAXIMUM de θ̇, à %.0f mm — et non\n",
+                b2.pub.d * 1e3)
+        println("    sur le nœud, qui est ailleurs.")
+    else
+        @printf("  • à 200 g, θ̇ culmine à %.2f vers %.0f mm, DÉPASSE donc la cible, puis\n",
+                θdot_max2, b2.rows[argmax([r.θdot for r in b2.rows])].d * 1e3)
+        @printf("    redescend ; « au plus proche de 6,0 » retient %.0f mm sur la branche\n",
+                b2.pub.d * 1e3)
+        @printf("    DESCENDANTE, où θ̇ = %.2f et l'angle n'est plus qu'à %.0f µrad du neutre.\n",
+                b2.pub.θdot, abs(b2.pub.θ) * 1e6)
+    end
+    let r2 = b2.pub.sd / b2.best.sd
+        if r2 < 1.1
+            @printf("    Le %.0f mm publié est déjà optimal — facteur %.1f, rien à corriger.\n",
+                    b2.pub.d * 1e3, r2)
+        else
+            @printf("    Le minimum de dispersion est ailleurs, à %.0f mm : facteur %.1f.\n",
+                    b2.best.d * 1e3, r2)
+        end
+    end
+    @printf("  • à 100 g, le minimum de dispersion est à %.0f mm (θ̇ = %.2f) contre %.0f mm\n",
+            b1.best.d*1e3, b1.best.θdot, b1.pub.d*1e3)
+    @printf("    au critère θ̇ : %.0f µrad du neutre au lieu de %.0f, soit un facteur %.1f.\n",
             abs(b1.pub.θ) * 1e6, abs(b1.best.θ) * 1e6, b1.pub.sd / b1.best.sd)
+    println()
+    println("  ⚠️ HISTOIRE DE CE FACTEUR, QUI A FAILLI ÊTRE ENTERRÉ À TORT. Il valait 2,8,")
+    println("  puis a semblé s'effondrer à 1,1 après la refonte en balistique intérieure")
+    println("  couplée — au point qu'on a publié que son « enjeu chiffré avait disparu ».")
+    println("  C'ÉTAIT UN ARTEFACT. La cible restait figée à 6,0, empruntée à Kolbe, quand")
+    println("  la cinématique du modèle en implique ~6,9 : le critère tombait par hasard")
+    @printf("  près du nœud. Cible rendue auto-cohérente, le facteur remonte à %.1f à 100 g\n",
+            b1.pub.sd / b1.best.sd)
+    @printf("  et %.1f à 200 g, du même ordre que le 2,8 d'origine. La recommandation\n",
+            b2.pub.sd / b2.best.sd)
+    println("  « viser le nœud plutôt que le chiffre » retrouve donc sa force, et pour la")
+    println("  bonne raison cette fois : les deux critères ne coïncident PAS (ci-dessus).")
 end
 println()
 println("PRÉDICTION TESTABLE : viser le passage de θ par zéro (ou, ce qui revient au")

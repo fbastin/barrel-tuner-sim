@@ -1,3 +1,7 @@
+# PDF compilés : ce dépôt ne publie que les sources. Reconstruire avec
+# « make pdf » (voir README) ; le site tireur.org les sert depuis files/tuners/.
+*.pdf
+
 # Auxiliaires LaTeX
 *.aux
 *.log

@@ -24,7 +24,11 @@
 #     make publish    → recopie les PDF vers ../files/tuners (servis par le site)
 #     make clean      → supprime les auxiliaires LaTeX
 
-PDFLATEX = pdflatex -interaction=nonstopmode -halt-on-error
+# latexmk plutôt que pdflatex : il relance les passes jusqu'à convergence.
+# Deux passes ne suffisent pas ici — la table des matières change de
+# longueur d'une passe à l'autre et décale la pagination, si bien que les
+# numéros de page annoncés dans le sommaire restaient faux (constaté 2026-07-25).
+LATEXMK  = latexmk -pdf -interaction=nonstopmode -halt-on-error
 PANDOC   = pandoc -s -t markdown-citations
 WEBDIR   = ../files/tuners
 
@@ -42,9 +46,8 @@ pdf: $(PDFS)
 
 # Deux passes : références croisées (\ref/\eqref) + bibliographie manuelle.
 %.pdf: %.tex $(IMAGES)
-	$(PDFLATEX) $<
-	$(PDFLATEX) $<
-	$(RM) $*.aux $*.log $*.out $*.toc
+	$(LATEXMK) $<
+	latexmk -c $<
 
 md: tuner_fr.md
 tuner_fr.md: tuner_fr.tex

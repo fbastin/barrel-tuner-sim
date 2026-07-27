@@ -8,7 +8,8 @@
 # « Cas du PCP » du document). La
 # vibration naît d'AUTRES sources — surtout la frappe marteau/soupape — qu'on
 # ne sait pas mesurer sans banc instrumenté. Et la cible d'accord n'est plus la
-# compensation positive (θ̇ = +6 MOA/ms) mais la BOUCHE STATIONNAIRE : θ̇ ≈ 0 à
+# compensation positive (θ̇ = +6,88 MOA/ms, cible dérivée) mais la BOUCHE
+# STATIONNAIRE : θ̇ ≈ 0 à
 # la sortie, où une gigue sur l'instant de sortie ne change plus l'angle de
 # lancement.
 #
@@ -38,6 +39,29 @@
 # (§ main §2, la « courbe d'accord ») : masse et position forment UN espace
 # d'accord, le poids fixe la courbe, la position accorde dessus.
 #
+# RÉSERVE PRINCIPALE (consignée le 2026-07-20) : LE TEMPS DE SORTIE EST SUPPOSÉ.
+# `exit_time()` repose sur le profil « burnout » paramétré (φ_burn), hérité du
+# modèle d'arme à feu ABANDONNÉ le 2026-07-19 au profit de la balistique
+# intérieure couplée de simulation.jl. Ce n'est PAS un oubli de migration : ce
+# modèle couplé décrit une COMBUSTION (fraction brûlée z(t)) et ne se transpose
+# pas à un PCP, où le gaz est déjà présent et se détend. φ_burn = 0,35 (vitesse
+# moyenne = 0,74·v_exit) est donc ici un PLACEHOLDER ASSUMÉ, pas une grandeur
+# dérivée — et rien ne le disait avant cette note.
+#
+# Ce qui en dépend, et ce n'est pas mineur. Contrairement à l'AMPLITUDE de
+# l'excitation (dont la position des sweet spots est indépendante, cf. ci-dessus),
+# t_b entre directement dans la phase ω·t_b. Balayage à 70 g :
+#     φ = 0,35  → t_b = 2,86 ms → sweet spot  63 mm   (valeur publiée)
+#     φ = 0,60  → t_b = 3,38 ms → sweet spot  33 mm
+#     accél. constante (t_b = 2L/v = 4,23 ms) → AUCUN sweet spot sur la course
+# Soit : 18 % d'erreur sur t_b déplace la cote de moitié. Reste robuste la
+# STRUCTURE (un seul sweet spot par course, courbe d'accord décroissante en
+# masse) ; les millimètres, non. Modéliser la détente d'un PCP pour elle-même
+# est le prérequis avant de citer ces cotes autrement qu'à titre indicatif.
+#
+# Note d'outillage : check_model_drift.py ne voit pas cette dérive — il compare
+# simulation.jl au portage JS/PHP, pas les scripts Julia entre eux.
+#
 # RÉSERVE : la position exacte des sweet spots suppose qu'UNE source
 # d'excitation domine (ici la frappe marteau, modélisée par une impulsion
 # brève à la culasse). Si plusieurs sources de poids comparable se mélangent,
@@ -65,7 +89,7 @@ const AMMO = (
     m_p    = 1.04e-3,     # 16 gr
     D_bore = 0.0055,      # .22 cal (5,5 mm)
     v_exit = 260.0,       # ~850 fps
-    φ_burn = 0.35,        # fraction de canon en accélération (profil burnout)
+    φ_burn = 0.35,        # profil burnout — PLACEHOLDER, cf. « RÉSERVE PRINCIPALE » en-tête
 )
 
 const BARREL = (
