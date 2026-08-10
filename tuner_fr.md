@@ -770,15 +770,15 @@ compensation.</figcaption>
 
 Ce qu'on appelle upward swing of the vibration at the muzzle dans
 Kolbe `\cite{Kolbe,KolbeWeb}`{=latex} correspond précisément à ce *nœud
-temporel ascendant*. Dans le jargon des compétiteurs (méthode *ladder*
-ou *OCW* `\cite{Audette}`{=latex}), le node d'accord désigne plus
-largement une zone de *robustesse* de groupement, c'est-à-dire un
-plateau autour duquel un petit décalage de $t_b$ ne dégrade pas le
-groupement. Au sens strict de la mécanique vibratoire, ce plateau est
-précisément la fenêtre autour d'un nœud temporel ascendant --- où
-$\ddot\theta(L,t_b)$ est proche de zéro et $\dot\theta(L,t_b)$ stationne
-près de sa valeur extrémale, ce qui rend le tuning peu sensible aux
-fluctuations de $t_b$.
+temporel ascendant*. Dans le jargon des compétiteurs (méthodes
+*ladder* `\cite{Audette}`{=latex} ou *OCW* `\cite{Newberry}`{=latex}),
+le node d'accord désigne plus largement une zone de *robustesse* de
+groupement, c'est-à-dire un plateau autour duquel un petit décalage de
+$t_b$ ne dégrade pas le groupement. Au sens strict de la mécanique
+vibratoire, ce plateau est précisément la fenêtre autour d'un nœud
+temporel ascendant --- où $\ddot\theta(L,t_b)$ est proche de zéro et
+$\dot\theta(L,t_b)$ stationne près de sa valeur extrémale, ce qui rend
+le tuning peu sensible aux fluctuations de $t_b$.
 
 ## Confirmation expérimentale (Kolbe, 2015)
 
@@ -1542,8 +1542,12 @@ A. Mallock, *Vibrations of Rifle Barrels*, Proceedings of the Royal
 Society, Vol. 68, p. 327, 1901.\
 <https://www.tireur.org/articles/Mall01.pdf>.
 
-C. Audette, *The Optimum Charge Weight (OCW) Method*, *Precision
-Shooting Magazine*, 2005--2010.
+C. Audette, méthode dite du *ladder* (un coup par charge, lu sur cible à
+longue distance), exposée dans *Precision Shooting Magazine*.
+
+D. Newberry, *The Optimal Charge Weight (OCW) Method* --- groupes de
+trois coups par incréments de charge, à distinguer du *ladder*
+d'Audette.
 
 A. Harral, *Al's 22LR --- Barrel Tuner Analysis* (étude par éléments
 finis d'un tuner de bouche sur carabine benchrest .22 LR, en ligne,
