@@ -980,9 +980,10 @@ cible vers $d \approx 115$ mm à 100 g et vers $d \approx 65$ mm à 200 g
 --- sans l'atteindre, le maximum de $6{,}38$ restant sous les $6{,}88$
 requis --- plus la masse est légère, plus le sweet spot est éloigné de
 la bouche. Enfin, *l'optimum est large* dans les deux cas : la zone à
-moins de 1 MOA/ms de la cible couvre $\sim 75$ mm de course à 100 g
-comme à 200 g. Masse et position forment ainsi un unique *espace
-d'accord*, le poids fixant la courbe et la position accordant dessus.
+moins de 1 MOA/ms de la cible couvre $40$ mm de course à 100 g ($100$ à
+$140$ mm) comme à 200 g ($45$ à $85$ mm). Masse et position forment
+ainsi un unique *espace d'accord*, le poids fixant la courbe et la
+position accordant dessus.
 
 #### Ordres de grandeur des masses employées.
 
@@ -1034,30 +1035,31 @@ retombe sur le *maximum* de $\dot\theta$ --- $115$ mm à 100 g, $65$ mm à
 200 g --- qui n'est pas le nœud. Le simulateur de variabilité
 (`variability.jl`) chiffre l'écart à un **facteur 2,5** à 100 g et
 **2,3** à 200 g sur la dispersion prédite ($0{,}94$ contre $0{,}38$ mm
-d'écart-type à 50 m à 100 g), le minimum de dispersion se trouvant à
-$\sim 140$ mm (fourchette et non cote : la position du nœud dépend de
-l'inertie propre du tuner, donc de son architecture --- le modèle décrit
-ici un ensemble tube à paroi mince, dont le rayon de giration découle de
-la masse installée, soit $\sim 2{,}8$ cm à 100 g et $\sim 5{,}0$ cm à
-200 g). Cette cote a déjà bougé plusieurs fois : une version antérieure
-annonçait $110$ mm, l'inertie du tuner y étant traitée comme une
-constante indépendante de la masse installée. Un tel porte-à-faux n'est
-réalisable qu'avec l'architecture à tube (Starik/Centra, tubes de 19 à
-36 cm), non avec un corps vissé ; la flèche statique ajoutée est
-négligeable (quelques centièmes de millimètre). En revanche **la liaison
-ne peut plus être tenue pour rigide** : le tube résonne vers $600$ Hz,
-ce qui est bien au-dessus du mode fondamental ($35$ Hz) --- ce dont une
-version antérieure concluait à la rigidité --- mais *en dessous* de la
-bande de $2$--$3$ kHz qui gouverne l'accord
-(section [4](#sec:modale){reference-type="ref" reference="sec:modale"}).
-Dans la bande qui compte, le tube possède donc sa propre dynamique, et
-le modéliser comme une masse ponctuelle affectée d'une inertie devient
-injustifié : limite **non résolue**, propre à l'architecture à tube. Ce
-résultat conforte par ailleurs le *ladder tune* : le tireur qui balaie
-la course et retient le meilleur groupement trouve le nœud sans le
-calculer, là où viser un chiffre de taux angulaire l'en écarte. *Statut*
-: le mauvais placement découle du critère de la
-section [5](#sec:cinematique){reference-type="ref"
+d'écart-type à 50 m à 100 g ; $0{,}77$ contre $0{,}34$ mm à 200 g, dont
+le minimum est à $85$ mm), le minimum de dispersion se trouvant à 100 g
+vers $\sim 140$ mm (fourchette et non cote : la position du nœud dépend
+de l'inertie propre du tuner, donc de son architecture --- le modèle
+décrit ici un ensemble tube à paroi mince, dont le rayon de giration
+découle de la masse installée, soit $\sim 2{,}8$ cm à 100 g et
+$\sim 5{,}0$ cm à 200 g). Cette cote a déjà bougé plusieurs fois : une
+version antérieure annonçait $110$ mm, l'inertie du tuner y étant
+traitée comme une constante indépendante de la masse installée. Un tel
+porte-à-faux n'est réalisable qu'avec l'architecture à tube
+(Starik/Centra, tubes de 19 à 36 cm), non avec un corps vissé ; la
+flèche statique ajoutée est négligeable (quelques centièmes de
+millimètre). En revanche **la liaison ne peut plus être tenue pour
+rigide** : le tube résonne vers $600$ Hz, ce qui est bien au-dessus du
+mode fondamental ($35$ Hz) --- ce dont une version antérieure concluait
+à la rigidité --- mais *en dessous* de la bande de $2$--$3$ kHz qui
+gouverne l'accord (section [4](#sec:modale){reference-type="ref"
+reference="sec:modale"}). Dans la bande qui compte, le tube possède donc
+sa propre dynamique, et le modéliser comme une masse ponctuelle affectée
+d'une inertie devient injustifié : limite **non résolue**, propre à
+l'architecture à tube. Ce résultat conforte par ailleurs le *ladder
+tune* : le tireur qui balaie la course et retient le meilleur groupement
+trouve le nœud sans le calculer, là où viser un chiffre de taux
+angulaire l'en écarte. *Statut* : le mauvais placement découle du
+critère de la section [5](#sec:cinematique){reference-type="ref"
 reference="sec:cinematique"} et se lit sur le balayage ; son *coût*
 chiffré dépend en revanche du modèle de variabilité et de son paramètre
 le moins assuré --- prédiction testable, non validée.
@@ -1070,8 +1072,8 @@ correspondent, sur la courbe de la
 figure [7](#fig:balayage_position){reference-type="ref"
 reference="fig:balayage_position"}, à $\sim 0{,}01$ MOA/ms par tour près
 de l'optimum (jusqu'à $\sim 0{,}04$ dans la partie raide). La largeur de
-l'optimum, $\sim 150$ à $190$ tours, explique qu'un *ladder tune*
-converge sans exiger une précision au tour près.
+l'optimum, $\sim 40$ mm soit $\sim 80$ tours, explique qu'un *ladder
+tune* converge sans exiger une précision au tour près.
 
 # Conclusions pratiques pour le tireur {#sec:conclusions}
 

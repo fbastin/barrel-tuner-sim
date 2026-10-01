@@ -317,9 +317,8 @@ let b2 = bests[0.200], b1 = bests[0.100]
     println("  bonne raison cette fois : les deux critères ne coïncident PAS (ci-dessus).")
 end
 println()
-println("PRÉDICTION TESTABLE : viser le passage de θ par zéro (ou, ce qui revient au")
-println("même, le MAXIMUM de θ̇) plutôt qu'une valeur nominale de θ̇. La différence")
-println("n'apparaît que lorsque la courbe dépasse la cible — cas du tuner léger.")
+println("PRÉDICTION TESTABLE : viser le passage de θ par zéro, et non le maximum de θ̇")
+println("ni une valeur nominale de θ̇ — les deux critères ne coïncident pas (ci-dessus).")
 println()
 
 # Sensibilité à l'hypothèse sur σ_k — le paramètre le moins assuré.
