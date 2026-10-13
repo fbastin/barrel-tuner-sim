@@ -77,18 +77,22 @@ const SEED    = 20260718
 # -----------------------------------------------------------------------------
 function response_split(m_tuner; d_overhang = 0.0, h_offset = H_OFFSET_EFF,
                         J_tuner = tuner_inertia(m_tuner))
-    tot  = simulate_shot(m_tuner; d_overhang, h_offset, J_tuner, verbose = false)
-    proj = simulate_shot(m_tuner; d_overhang, h_offset = 0.0, J_tuner, verbose = false)
+    # Pas de 1 µs PARTOUT (2026-10-13) : θ est lu à des instants de sortie étalés de quelques
+    # dizaines de µs autour de t_b, là où θ̇ varie le plus vite ; le pas fin que simulate_shot
+    # réserve à l'intervalle [0, t_b] ne les couvrirait pas tous.
+    tot  = simulate_shot(m_tuner; d_overhang, h_offset, J_tuner, Δt = 1e-6, verbose = false)
+    proj = simulate_shot(m_tuner; d_overhang, h_offset = 0.0, J_tuner, Δt = 1e-6, verbose = false)
     return (ts = tot.ts, θ_rec = tot.θ_L .- proj.θ_L, θ_proj = proj.θ_L)
 end
 
-# Interpolation linéaire de θ à un instant quelconque (pas de temps constant).
+# Interpolation linéaire de θ à un instant quelconque, sur une grille quelconque. L'ancienne
+# version supposait un pas constant (indice tiré de ts[2] - ts[1]) : sur la grille à pas
+# variable de simulate_shot (2026-10-13), elle lisait θ au mauvais instant.
 function interp(ts, ys, t)
     t <= ts[1]   && return ys[1]
     t >= ts[end] && return ys[end]
-    Δ = ts[2] - ts[1]
-    i = clamp(floor(Int, (t - ts[1]) / Δ) + 1, 1, length(ts) - 1)
-    w = (t - ts[i]) / Δ
+    i = clamp(searchsortedlast(ts, t), 1, length(ts) - 1)
+    w = (t - ts[i]) / (ts[i + 1] - ts[i])
     return (1 - w) * ys[i] + w * ys[i + 1]
 end
 

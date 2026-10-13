@@ -62,8 +62,9 @@ end
 #            L=0,660          L=0,711
 #   τ_v      7,62 µs/(m/s)    8,18
 #   cible    6,88 MOA/ms      6,41      (la cible BAISSE avec la longueur)
-#   θ̇ max    6,38             6,98–7,06 (et l'amplitude MONTE)
-#   verdict  manque 0,51      CIBLE DÉPASSÉE de 0,6
+#   θ̇ max    6,39             6,98–7,06 (et l'amplitude MONTE)
+#   verdict  manque 0,49      CIBLE DÉPASSÉE de 0,6
+# (colonne 0,660 recalculée le 2026-10-13, lecture interpolée à t_b ; elle portait 6,38 et 0,51)
 # Autrement dit : à la longueur que ses propres sources décrivent, le modèle
 # ATTEINT la compensation positive, qu'il n'atteint pas à 26". Le « le modèle
 # n'y arrive à aucun réglage » publié le 2026-07-20 est donc conditionnel à un
@@ -201,7 +202,7 @@ const RAD_TO_MOA = 180 / π * 60
 # n'appartenait pas au modèle qui le cherchait.
 #
 # CE QUE ÇA COÛTE, ET IL FAUT LE DIRE. La cible auto-cohérente vaut ~6,9 MOA/ms
-# quand θ̇ CULMINE à 6,38 : elle n'est atteignable à aucun réglage. Ce n'est pas
+# quand θ̇ CULMINE à 6,39 : elle n'est atteignable à aucun réglage. Ce n'est pas
 # un échec du correctif, c'est ce que le modèle disait déjà sans qu'on l'écoute —
 # l'incohérence masquait le fait que la compensation n'est pas atteinte à ce
 # h_offset. Le critère « au plus proche » retombe alors sur le maximum de θ̇,
@@ -652,23 +653,30 @@ end
 # -----------------------------------------------------------------------------
 # 9. NEWMARK-β (γ=1/2, β=1/4)
 # -----------------------------------------------------------------------------
-function newmark_solve(Ma, Ca, Ka, F_of_t, t_end, Δt; γ = 0.5, β = 0.25)
+# `grille` : instants de calcul fournis par l'appelant (pas variable), à la place de
+# 0:Δt:t_end. La matrice effective est refactorisée à chaque changement de pas.
+function newmark_solve(Ma, Ca, Ka, F_of_t, t_end, Δt; γ = 0.5, β = 0.25, grille = nothing)
     n  = size(Ma, 1)
-    ts = collect(0:Δt:t_end)
+    ts = grille === nothing ? collect(0:Δt:t_end) : collect(grille)
     Nt = length(ts)
     U  = zeros(n, Nt)
     V  = zeros(n, Nt)
     Ac = zeros(n, Nt)
     Ac[:, 1] = Ma \ (F_of_t(ts[1]) - Ca * V[:, 1] - Ka * U[:, 1])
-    K_eff = Ma + γ * Δt * Ca + β * Δt^2 * Ka
-    K_fact = factorize(K_eff)
+    h_fact = NaN
+    K_fact = nothing
     for i in 1:Nt-1
-        u_pred = U[:, i] + Δt * V[:, i] + Δt^2 * (0.5 - β) * Ac[:, i]
-        v_pred = V[:, i] + Δt * (1 - γ) * Ac[:, i]
+        h = ts[i+1] - ts[i]
+        if !(abs(h - h_fact) <= 1e-9 * h)
+            K_fact = factorize(Ma + γ * h * Ca + β * h^2 * Ka)
+            h_fact = h
+        end
+        u_pred = U[:, i] + h * V[:, i] + h^2 * (0.5 - β) * Ac[:, i]
+        v_pred = V[:, i] + h * (1 - γ) * Ac[:, i]
         rhs    = F_of_t(ts[i+1]) - Ca * v_pred - Ka * u_pred
         Ac[:, i+1] = K_fact \ rhs
-        U[:, i+1]  = u_pred + β * Δt^2 * Ac[:, i+1]
-        V[:, i+1]  = v_pred + γ * Δt   * Ac[:, i+1]
+        U[:, i+1]  = u_pred + β * h^2 * Ac[:, i+1]
+        V[:, i+1]  = v_pred + γ * h   * Ac[:, i+1]
     end
     return ts, U, V, Ac
 end
@@ -676,9 +684,16 @@ end
 # -----------------------------------------------------------------------------
 # 10. SIMULATION D'UN TIR (h_offset paramétrable)
 # -----------------------------------------------------------------------------
+# LECTURE À LA SORTIE (2026-10-13). θ̇(L) varie de plusieurs dixièmes de MOA/ms en quelques
+# microsecondes autour de t_b (modes élevés excités par l'impulsion de pression). Au pas
+# uniforme de 5 µs, lu au point de grille le plus proche de t_b, il valait −0,483 MOA/ms au
+# réglage par défaut du portage web, pour une valeur convergée de −0,399 (−0,379 interpolé à
+# 5 µs, −0,394 à 2,5 µs, −0,3986 à 1 µs, −0,3992 à 0,5 µs). On calcule donc au pas fin
+# Δt_sortie jusqu'à la sortie, au pas Δt ensuite, et y, θ, θ̇ sont INTERPOLÉS à t_b exact.
+# Près de l'optimum l'écart était sous 0,015 MOA/ms : le pic publié passe de 6,38 à 6,39.
 function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
                        d_overhang = 0.0,
-                       Δt = 5e-6, t_end = 30e-3,
+                       Δt = 5e-6, t_end = 30e-3, Δt_sortie = 1e-6,
                        ζ1 = ZETA_DEFAULT, ζ2 = ZETA_DEFAULT,
                        h_offset = h_offset_default,
                        moment_of_t = nothing, v_p = v_muzzle, m_proj = m_p,
@@ -694,15 +709,21 @@ function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
                                 moment_of_t = moment_of_t, m_proj = m_proj,
                                 p_of_t = kin.p)
 
-    ts, U, V, _ = newmark_solve(Ma, Ca, Ka, F_of_t, t_end, Δt)
+    # Grille : pas fin jusqu'à un pas fin après t_b, pas courant ensuite.
+    t_fin  = min(t_b + Δt_sortie, t_end)
+    grille = vcat(collect(0:Δt_sortie:t_fin), collect((t_fin + Δt):Δt:t_end))
+    ts, U, V, _ = newmark_solve(Ma, Ca, Ka, F_of_t, t_end, Δt; grille = grille)
 
     y_L     = U[end-1, :]
     θ_L     = U[end,   :]
     θdot_L  = V[end,   :]
 
-    idx_b      = argmin(abs.(ts .- t_b))
-    θ_at_tb    = θ_L[idx_b]
-    θdot_at_tb = θdot_L[idx_b]
+    # Interpolation linéaire à t_b exact, entre deux points de la grille fine.
+    idx_b      = clamp(searchsortedlast(ts, t_b), 1, length(ts) - 1)
+    w_b        = (t_b - ts[idx_b]) / (ts[idx_b+1] - ts[idx_b])
+    à_tb(h)    = h[idx_b] + (h[idx_b+1] - h[idx_b]) * w_b
+    θ_at_tb    = à_tb(θ_L)
+    θdot_at_tb = à_tb(θdot_L)
     θdot_MOAms = moa_per_ms(θdot_at_tb)
 
     if verbose
@@ -712,8 +733,8 @@ function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
         for f in freqs; @printf("%8.2f  ", f); end
         println()
         @printf("τ_v (sensibilité) = %.2f µs/(m/s)   [Kolbe : 8,8]\n", kin.τ_v * 1e6)
-        @printf("À t = t_b = %.3f ms :\n", ts[idx_b] * 1e3)
-        @printf("    y(L)  = %+.3e m\n",      y_L[idx_b])
+        @printf("À t = t_b = %.3f ms :\n", t_b * 1e3)
+        @printf("    y(L)  = %+.3e m\n",      à_tb(y_L))
         @printf("    θ(L)  = %+.3e rad\n",    θ_at_tb)
         @printf("    θ̇(L)  = %+.3f rad/s  =  %+.3f MOA/ms\n",
                 θdot_at_tb, θdot_MOAms)
@@ -730,8 +751,8 @@ function simulate_shot(m_tuner; J_tuner = tuner_inertia(m_tuner),
         y_L        = y_L,
         θ_L        = θ_L,
         θdot_L     = θdot_L,
-        idx_b      = idx_b,
-        t_b        = ts[idx_b],
+        idx_b      = idx_b,                # dernier point de grille avant t_b
+        t_b        = t_b,                  # instant exact de sortie
         θ_at_tb    = θ_at_tb,
         θdot_at_tb = θdot_at_tb,
         θdot_MOAms = θdot_MOAms,
@@ -1231,8 +1252,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @printf("   τ_v est désormais PRÉDIT (%.2f µs/(m/s)) et non calé — Kolbe mesure 8,8.\n",
             projectile_kinematics(v_muzzle, L).τ_v * 1e6)
     println(" • Les tracés sont enregistrés en PNG dans le répertoire courant.")
-    println(" • Amortissement de Rayleigh : ζ₁ = 0.5 %, ζ₂ = 1 %.")
-    println(" • Schéma de Newmark : (γ, β) = (1/2, 1/4), Δt = 5 µs.")
+    @printf(" • Amortissement de Rayleigh : ζ₁ = ζ₂ = %.0f %%.\n", ZETA_DEFAULT * 100)
+    println(" • Schéma de Newmark : (γ, β) = (1/2, 1/4), Δt = 1 µs jusqu'à la sortie, 5 µs ensuite ;")
+    println("   y, θ, θ̇ interpolés à t_b exact.")
     println("="^72)
 
 

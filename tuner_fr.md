@@ -856,10 +856,10 @@ $\dot\theta(L,t_b)$.
 angulaire $\dot\theta(L,t)$. Le trait rouge pointillé marque
 $t_b = 2{,}57$ ms (balistique intérieure couplée) ; le trait vert
 pointillé indique la cible *dérivée* ($6{,}88$ MOA/ms). À $t_b$, cette
-configuration sans porte-à-faux donne $\dot\theta = -0{,}32$ MOA/ms ---
-le tuner a bien redressé le canon nu, qui vaut $-2{,}01$, mais le signe
+configuration sans porte-à-faux donne $\dot\theta = -0{,}24$ MOA/ms ---
+le tuner a bien redressé le canon nu, qui vaut $-2{,}09$, mais le signe
 reste négatif : c'est le porte-à-faux, non la seule masse, qui amène
-$\dot\theta$ du bon côté (jusqu'à $+6{,}38$ à $65$ mm). Voir la réserve
+$\dot\theta$ du bon côté (jusqu'à $+6{,}39$ à $65$ mm). Voir la réserve
 ci-dessous.](plot_tir_nominal.png){#fig:reponse_transitoire
 width="0.85\\linewidth"}
 
@@ -898,10 +898,10 @@ $1\,\%$) --- une validation de la *théorie*, non de notre simulateur.
 
 Ce qui demeure hors de portée est l'*amplitude absolue*. À
 $t_b = 2{,}57$ ms, le modèle encastré donne $\dot\theta(L,t_b)$ du bon
-*signe* --- négatif pour le canon nu ($-2{,}01$ MOA/ms, bouche
+*signe* --- négatif pour le canon nu ($-2{,}09$ MOA/ms, bouche
 descendante, comme les $-9{,}4$ mesurés par Kolbe), ramené vers le
-positif par la masse de bouche ($-0{,}32$ à 200 g, $+1{,}6$ à 400 g
-posés sans porte-à-faux) puis porté à $+6{,}38$ en vissant le tuner à
+positif par la masse de bouche ($-0{,}24$ à 200 g, $+1{,}6$ à 400 g
+posés sans porte-à-faux) puis porté à $+6{,}39$ en vissant le tuner à
 $65$ mm --- mais insuffisant pour atteindre la cible *dérivée* de
 $6{,}88$ MOA/ms. Et ce déficit n'est pas un défaut de réglage : le
 balayage systématique de `sensitivity_map.jl`, sur quatre longueurs de
@@ -965,10 +965,10 @@ masse ponctuelle du modèle précédent.
 fourchette réelle (100 et 200 g). En haut : $\dot\theta(L,t_b)$ en
 fonction du porte-à-faux $d$ ; la bande verte marque $\pm 1$ MOA/ms
 autour de la cible de Kolbe. Le porte-à-faux seul fait passer le taux
-angulaire de $-1{,}7$ à $+6{,}2$ MOA/ms (100 g) ou de $+1{,}8$ à
-$+5{,}9$ (200 g) : dans les deux cas la course couvre tout l'écart entre
-arme non compensée et cible. En bas : $f_1$ décroît avec $d$, la
-position décalant les mêmes fréquences modales que la
+angulaire de $-7{,}0$ à $+6{,}4$ MOA/ms (100 g) ou de $-0{,}2$ à
+$+6{,}4$ (200 g) : dans les deux cas la course mène d'une arme non
+compensée à moins de $0{,}5$ MOA/ms de la cible. En bas : $f_1$ décroît
+avec $d$, la position décalant les mêmes fréquences modales que la
 masse.](plot_balayage_position.png){#fig:balayage_position
 width="0.85\\linewidth"}
 
@@ -977,7 +977,7 @@ nul besoin de changer de poids, la course du tuner traverse toute la
 plage utile. Ensuite, *le poids détermine où sur la course*, non la
 possibilité d'accorder : $\dot\theta$ s'approche au plus près de la
 cible vers $d \approx 115$ mm à 100 g et vers $d \approx 65$ mm à 200 g
---- sans l'atteindre, le maximum de $6{,}38$ restant sous les $6{,}88$
+--- sans l'atteindre, le maximum de $6{,}39$ restant sous les $6{,}88$
 requis --- plus la masse est légère, plus le sweet spot est éloigné de
 la bouche. Enfin, *l'optimum est large* dans les deux cas : la zone à
 moins de 1 MOA/ms de la cible couvre $40$ mm de course à 100 g ($100$ à
@@ -1029,7 +1029,7 @@ revenait à régler sur le nœud. Tant que l'excitation était supposée
 identique à chaque coup, l'écart restait sans conséquence visible ; dès
 lors qu'elle varie (point 12), il se paie, la sensibilité à cette
 variabilité étant proportionnelle à l'angle *absolu* $\theta(t_b)$. La
-cible dérivée vaut $6{,}88$ MOA/ms et $\dot\theta$ culmine à $6{,}38$ :
+cible dérivée vaut $6{,}88$ MOA/ms et $\dot\theta$ culmine à $6{,}39$ :
 elle n'est atteignable à *aucun* réglage, de sorte que  au plus proche 
 retombe sur le *maximum* de $\dot\theta$ --- $115$ mm à 100 g, $65$ mm à
 200 g --- qui n'est pas le nœud. Le simulateur de variabilité
